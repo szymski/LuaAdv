@@ -198,6 +198,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             return exp;
         }
 
+        // TODO: Right to left might be required (no recursive call, but a loop)
         Expression Expression_Multiplicative()
         {
             var exp = Expression_Power();

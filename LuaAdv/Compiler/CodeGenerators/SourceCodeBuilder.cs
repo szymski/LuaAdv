@@ -8,13 +8,13 @@ namespace LuaAdv.Compiler.CodeGenerators
 {
     public class SourceCodeBuilder
     {
-        private Stack<StringBuilder> stringBuilders = new Stack<StringBuilder>();
-        private StringBuilder currentStringBuilder;
+        private Stack<StringBuilder> _stringBuilders = new Stack<StringBuilder>();
+        private StringBuilder _currentStringBuilder;
 
-        public string Output => currentStringBuilder.ToString();
+        public string Output => _currentStringBuilder.ToString();
 
         public int Tabs { get; set; } = 0;
-        private bool tabsInserted = false;
+        private bool _tabsInserted = false;
 
         public SourceCodeBuilder()
         {
@@ -23,46 +23,46 @@ namespace LuaAdv.Compiler.CodeGenerators
 
         public void Append(string text, params object[] args)
         {
-            if (!tabsInserted)
+            if (!_tabsInserted)
             {
                 for (int i = 0; i < Tabs; i++)
-                    currentStringBuilder.Append('\t');
-                tabsInserted = true;
+                    _currentStringBuilder.Append('\t');
+                _tabsInserted = true;
             }
 
-            currentStringBuilder.AppendFormat(text, args);
+            _currentStringBuilder.AppendFormat(text, args);
         }
 
         public void AppendLine(string text, params object[] args)
         {
-            if (!tabsInserted)
+            if (!_tabsInserted)
             {
                 for (int i = 0; i < Tabs; i++)
-                    currentStringBuilder.Append('\t');
-                tabsInserted = true;
+                    _currentStringBuilder.Append('\t');
+                _tabsInserted = true;
             }
 
-            currentStringBuilder.AppendFormat(text, args);
-            currentStringBuilder.AppendLine();
-            tabsInserted = false;
+            _currentStringBuilder.AppendFormat(text, args);
+            _currentStringBuilder.AppendLine();
+            _tabsInserted = false;
         }
 
         public void AppendLine()
         {
-            currentStringBuilder.AppendLine();
-            tabsInserted = false;
+            _currentStringBuilder.AppendLine();
+            _tabsInserted = false;
         }
 
         public void PushStringBuilder()
         {
-            stringBuilders.Push(new StringBuilder());
-            currentStringBuilder = stringBuilders.Peek();
+            _stringBuilders.Push(new StringBuilder());
+            _currentStringBuilder = _stringBuilders.Peek();
         }
 
         public void PopStringBuilder()
         {
-            stringBuilders.Pop();
-            currentStringBuilder = stringBuilders.Peek();
+            _stringBuilders.Pop();
+            _currentStringBuilder = _stringBuilders.Peek();
         }
 
         public override string ToString() => Output;

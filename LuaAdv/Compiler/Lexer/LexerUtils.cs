@@ -129,7 +129,7 @@ namespace LuaAdv.Compiler.Lexer
 
         void PushToken(Token token, string value)
         {
-            PushToken(token, value, line, character, line, line + value.Length);   
+            PushToken(token, value, line, patternStack.Last().position, line, line + value.Length);   
         }
 
         void ThrowException(string message)

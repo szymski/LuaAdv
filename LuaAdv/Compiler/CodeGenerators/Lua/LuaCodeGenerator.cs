@@ -890,5 +890,10 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
             return node;
         }
+
+        public Node Visit(ScopeNode node)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

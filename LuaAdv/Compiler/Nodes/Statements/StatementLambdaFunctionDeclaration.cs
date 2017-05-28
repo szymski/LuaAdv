@@ -11,7 +11,7 @@ namespace LuaAdv.Compiler.Nodes.Statements
         public Token nameToken;
         public NamedVariable name;
         public List<Tuple<Token, string, Expression>> parameterList;
-        public Expression expression;
+        public Node expression;
 
         public StatementLambdaFunctionDeclaration(bool local, Token funcToken, NamedVariable name,
             List<Tuple<Token, string, Expression>> parameterList, Expression expression)

@@ -119,5 +119,7 @@ namespace LuaAdv.Compiler
         Node Visit(Null node);
 
         #endregion
+
+        Node Visit(ScopeNode node);
     }
 }

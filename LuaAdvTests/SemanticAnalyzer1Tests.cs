@@ -23,13 +23,13 @@ namespace LuaAdvTests
         {
             var analyzer = Analyze("  function simpleFunc(param1, param2) { }");
 
-            var funcInfo = analyzer.Functions[0];
+            var funcInfo = analyzer.MainScope.Functions[0];
 
             Assert.AreEqual(0, funcInfo.Line);
             Assert.AreEqual(2, funcInfo.Character);
             Assert.AreEqual("simpleFunc", funcInfo.Name);
             Assert.AreEqual("param1", funcInfo.ParameterList[0].Item1);
-            Assert.AreEqual("param2", funcInfo.ParameterList[0].Item1);
+            Assert.AreEqual("param2", funcInfo.ParameterList[1].Item1);
         }
     }
 }

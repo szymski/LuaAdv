@@ -19,6 +19,8 @@ namespace LuaAdvTests
             Assert.IsInstanceOfType(lexer.Output[id++], typeof(TokenKeyword));
             Assert.IsInstanceOfType(lexer.Output[id++], typeof(TokenIdentifier));
             Assert.IsInstanceOfType(lexer.Output[id++], typeof(TokenIdentifier));
+
+            Assert.AreEqual(0, lexer.Output[0].Character);
         }
 
         [TestMethod]

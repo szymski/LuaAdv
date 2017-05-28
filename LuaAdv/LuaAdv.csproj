@@ -106,7 +106,7 @@
     <Compile Include="Compiler\Nodes\Expressions\NamedVariable.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Expression.cs" />
     <Compile Include="Compiler\Nodes\Node.cs" />
-    <Compile Include="Compiler\Nodes\Scope.cs" />
+    <Compile Include="Compiler\Nodes\ScopeNode.cs" />
     <Compile Include="Compiler\Nodes\Statements\GlobalVariablesDeclaration.cs" />
     <Compile Include="Compiler\Nodes\Statements\LocalVariablesDeclaration.cs" />
     <Compile Include="Compiler\Nodes\Statements\StatementExpression.cs" />
@@ -125,7 +125,9 @@
     <Compile Include="Compiler\Nodes\Statements\Sequence.cs" />
     <Compile Include="Compiler\Nodes\Statements\Statement.cs" />
     <Compile Include="Compiler\SemanticAnalyzer1\FunctionInformation.cs" />
+    <Compile Include="Compiler\SemanticAnalyzer1\Scope.cs" />
     <Compile Include="Compiler\SemanticAnalyzer1\SemanticAnalyzer1.cs" />
+    <Compile Include="Compiler\SemanticAnalyzer1\VariableInformation.cs" />
     <Compile Include="Compiler\Specification.cs" />
     <Compile Include="Compiler\SyntaxAnalyzer\SyntaxAnalyzerExceptions.cs" />
     <Compile Include="Compiler\SyntaxAnalyzer\SyntaxAnalyzerExpressions.cs" />

@@ -8,10 +8,14 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 {
     public class FunctionInformation
     {
-        public int Line { get; }
-        public int Character { get; }
-        public string Name { get; }
-        public List<Tuple<string, string>> ParameterList { get; }
-        public string ReturnType { get; }
+        public int Line { get; set; }
+        public int Character { get; set; }
+        public string Name { get; set; }
+        /// <summary>
+        /// Item 1 - parameter name
+        /// Item 2 - default value
+        /// </summary>
+        public List<Tuple<string, string>> ParameterList { get; set; } = new List<Tuple<string, string>>();
+        public string ReturnType { get; set; } = "";
     }
 }

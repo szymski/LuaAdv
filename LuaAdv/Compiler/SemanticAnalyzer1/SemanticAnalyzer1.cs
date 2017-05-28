@@ -28,24 +28,46 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
     public class SemanticAnalyzer1 : IAstVisitor
     {
         public Node MainNode { get; }
-
-        public List<FunctionInformation> Functions { get; } = new List<FunctionInformation>();
+        public Scope MainScope { get; }
+        public Scope CurrentScope { get; set; }
 
         public SemanticAnalyzer1(Node mainNode)
         {
             MainNode = mainNode;
-            mainNode.Accept(this);
+
+            var scopeNode = new ScopeNode(mainNode, new Scope());
+            MainScope = scopeNode.scope;
+            scopeNode.Accept(this);
         }
 
         public Node Visit(Node node)
         {
             throw new NotImplementedException(node.GetType().Name + " analysis not implemented!");
         }
-
+        
         public Node Visit(Statement node)
         {
             throw new NotImplementedException(node.GetType().Name + " analysis not implemented!");
         }
+
+        #region Scopes
+
+        public Node Visit(ScopeNode node)
+        {
+            var oldScope = CurrentScope;
+            CurrentScope = node.scope;
+            node.node.Accept(this);
+            CurrentScope = oldScope;
+
+            return node;
+        }
+
+        private ScopeNode PushScope(Node innerNode)
+        {
+            return new ScopeNode(innerNode, new Scope(CurrentScope));
+        }
+
+        #endregion
 
         public Node Visit(For node)
         {
@@ -93,10 +115,11 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public Node Visit(If node)
         {
-            foreach (var ifChild in node.ifs)
+            for (int i = 0; i < node.ifs.Count; i++)
             {
-                ifChild.Item2? = ifChild.Item2?.Accept(this);
-                ifChild.Item3 = ifChild.Item3.Accept(this);
+                var ifChild = node.ifs[i];
+
+                node.ifs[i] = new Tuple<Token, Expression, Sequence>(ifChild.Item1, ifChild.Item2?.Accept(this) as Expression, (Sequence)ifChild.Item3.Accept(this));
             }
 
             return node;
@@ -104,64 +127,82 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public Node Visit(Return node)
         {
-            foreach (var value in node.values)
-                value.Accept(this);
+            for (var index = 0; index < node.values.Length; index++)
+                node.values[index] = (Expression)node.values[index].Accept(this);
 
             return node;
         }
 
         public Node Visit(StatementFunctionDeclaration node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
+            for (int i = 0; i < node.parameterList.Count; i++)
+                if (node.parameterList[i].Item3 != null)
+                    node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.sequence = node.sequence.Accept(this);
+            var information = new FunctionInformation()
+            {
+                Line = node.funcToken.Line,
+                Character = node.funcToken.Character,
+                Name = node.name.Token.Value,
+                ParameterList = node.parameterList.Select(p => new Tuple<string, string>(p.Item2, p.Item3?.Token.Value ?? "")).ToList(),
+                ReturnType = "" // TODO: Return type analysis
+            };
+
+            CurrentScope.Functions.Add(information);
+
+            node.sequence = PushScope(node.sequence).Accept(this);
 
             return node;
         }
 
         public Node Visit(StatementLambdaFunctionDeclaration node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
+            for (int i = 0; i < node.parameterList.Count; i++)
+                if (node.parameterList[i].Item3 != null)
+                    node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.expression = (Expression)node.expression.Accept(this);
+            node.expression = PushScope(node.expression).Accept(this);
+            // TODO: Do lowering to function declaration
 
             return node;
         }
 
         public Node Visit(StatementLambdaMethodDeclaration node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
+            for (int i = 0; i < node.parameterList.Count; i++)
+                if (node.parameterList[i].Item3 != null)
+                    node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.expression = node.expression.Accept(this);
+            node.expression = PushScope(node.expression).Accept(this);
+
+            // TODO: Do lowering to method declaration
 
             return node;
         }
 
         public Node Visit(StatementMethodDeclaration node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
+            for (int i = 0; i < node.parameterList.Count; i++)
+                if (node.parameterList[i].Item3 != null)
+                    node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.sequence = node.sequence.Accept(this);
+            node.sequence = PushScope(node.sequence).Accept(this);
 
             return node;
         }
 
         public Node Visit(GlobalVariablesDeclaration node)
         {
-            foreach (var value in node.values)
-                value.Accept(this);
+            for (int i = 0; i < node.values.Length; i++)
+                node.values[i] = (Expression)node.values[i].Accept(this);
 
             return node;
         }
 
         public Node Visit(LocalVariablesDeclaration node)
         {
-            foreach (var value in node.values)
-                value.Accept(this);
+            for (var i = 0; i < node.values.Length; i++)
+                node.values[i] = (Expression)node.values[i].Accept(this);
 
             return node;
         }
@@ -185,56 +226,56 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public Node Visit(ValueAssignmentOperator node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(AddAssignmentOperator node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(SubtractAssignmentOperator node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(MultiplyAssignmentOperator node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(DivideAssignmentOperator node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(ModuloAssignmentOperator node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(ConcatAssignmentOperator node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
@@ -256,281 +297,290 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public Node Visit(Equals node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(NotEquals node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Greater node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Less node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(GreaterOrEqual node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(LessOrEqual node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Is node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(ConditionalAnd node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(ConditionalOr node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(LogicalAnd node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(LogicalOr node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(LogicalXor node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Add node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            if (node.left is Number && node.right is Number)
+                return new Number(node.left.Token, ((Number)node.left).value + ((Number)node.right).value);
 
             return node;
         }
 
         public Node Visit(Subtract node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Multiply node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            if (node.left is Number && node.right is Number)
+                return new Number(node.left.Token, ((Number)node.left).value * ((Number)node.right).value);
 
             return node;
         }
 
         public Node Visit(Divide node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Modulo node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Power node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Concat node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(PostDecrement node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(PostIncrement node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(PreDecrement node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(PreIncrement node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(Negation node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(Negative node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(Not node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(AnonymousFunction node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
+            for (int i = 0; i < node.parameterList.Count; i++)
+                if (node.parameterList[i].Item3 != null)
+                    node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.sequence= (Expression)node.sequence.Accept(this);
+            node.sequence = (Expression)node.sequence.Accept(this);
 
             return node;
         }
 
         public Node Visit(AnonymousLambdaFunction node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
+            for (int i = 0; i < node.parameterList.Count; i++)
+                if (node.parameterList[i].Item3 != null)
+                    node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(FunctionCall node)
         {
-            node.function= (Expression)node.function.Accept(this);
+            node.function = (Expression)node.function.Accept(this);
 
-            foreach (var param in node.parameters)
-                param.Accept(this);
+            for (var i = 0; i < node.parameters.Length; i++)
+                node.parameters[i] = (Expression)node.parameters[i].Accept(this);
 
             return node;
         }
 
         public Node Visit(GroupedEquation node)
         {
-            node.expression= (Expression)node.expression.Accept(this);
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }
 
         public Node Visit(MethodCall node)
         {
-            node.methodTable= (Expression)node.methodTable.Accept(this);
+            node.methodTable = (Expression)node.methodTable.Accept(this);
 
-            foreach (var param in node.parameters)
-                param.Accept(this);
+            for (var i = 0; i < node.parameters.Length; i++)
+                node.parameters[i] = (Expression)node.parameters[i].Accept(this);
 
             return node;
         }
 
         public Node Visit(NullPropagation node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(ShiftLeft node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(ShiftRight node)
         {
-            node.left= (Expression)node.left.Accept(this);
-            node.right= (Expression)node.right.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
 
             return node;
         }
 
         public Node Visit(Table node)
         {
-            foreach (var key in node.values)
+            for (int index = 0; index < node.values.Length; index++)
             {
-                key.Item1 = key.Item1.Accept(this);
-                key.Item2? = key.Item2?.Accept(this);
+                var key = node.values[index];
+
+                node.values[index] = new Tuple<Expression, Expression>((Expression)key.Item1.Accept(this), key.Item2?.Accept(this) as Expression);
             }
 
             return node;
@@ -538,24 +588,24 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public Node Visit(TableDotIndex node)
         {
-            node.table= (Expression)node.table.Accept(this);
+            node.table = (Expression)node.table.Accept(this);
 
             return node;
         }
 
         public Node Visit(TableIndex node)
         {
-            node.table= (Expression)node.table.Accept(this);
-            node.key= (Expression)node.key.Accept(this);
+            node.table = (Expression)node.table.Accept(this);
+            node.key = (Expression)node.key.Accept(this);
 
             return node;
         }
 
         public Node Visit(Ternary node)
         {
-            node.conditionExpression= (Expression)node.conditionExpression.Accept(this);
-            node.expression1= (Expression)node.expression1.Accept(this);
-            node.expression2= (Expression)node.expression2.Accept(this);
+            node.conditionExpression = (Expression)node.conditionExpression.Accept(this);
+            node.expression1 = (Expression)node.expression1.Accept(this);
+            node.expression2 = (Expression)node.expression2.Accept(this);
 
             return node;
         }
