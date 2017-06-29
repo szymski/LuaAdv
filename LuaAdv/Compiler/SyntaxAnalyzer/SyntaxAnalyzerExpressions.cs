@@ -45,6 +45,8 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             return expression;
         }
 
+        // BUG: Cancel comments while parsing expressions - comment tokens inside expressions break them
+
         Expression Expression_Ternary()
         {
             var exp = Expression_NullPropagation();
@@ -226,11 +228,11 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
         Expression Expression_Unary()
         {
             if (AcceptSymbol("-"))
-                return new Negative(token, Expression_GroupedEquation());
+                return new Negative(token, Expression_AfterValueOperations());
             else if (AcceptSymbol("!"))
-                return new Not(token, Expression_GroupedEquation());
+                return new Not(token, Expression_AfterValueOperations());
             else if (AcceptSymbol("~"))
-                return new Negation(token, Expression_GroupedEquation());
+                return new Negation(token, Expression_AfterValueOperations());
 
             return Expression_PreOperations();
         }
@@ -240,7 +242,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             if (AcceptSymbol("++"))
             {
                 var operatorToken = token;
-                var exp = Expression_AfterValueOperations();
+                var exp = Expression_TableLength();
 
                 EnsureNamed(exp);
 
@@ -249,7 +251,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             else if (AcceptSymbol("--"))
             {
                 var operatorToken = token;
-                var exp = Expression_AfterValueOperations();
+                var exp = Expression_TableLength();
 
                 EnsureNamed(exp);
 
@@ -288,7 +290,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
         Expression Expression_AssignmentOperators()
         {
-            var exp = Expression_AfterValueOperations();
+            var exp = Expression_TableLength();
 
             if (exp == null)
                 return null;
@@ -303,7 +305,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 var valueExp = Expression();
                 return new ValueAssignmentOperator(exp, operatorToken, valueExp);
             }
-            // BUG: All below this line don't work in function calls, print(a += 123)
+            // BUG: All below this line doesn't work in function calls, print(a += 123)
             else if (AcceptSymbol("+="))
             {
                 var operatorToken = token;
@@ -350,9 +352,17 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             return exp;
         }
 
+        Expression Expression_TableLength()
+        {
+            if (AcceptSymbol("#"))
+                return new TableLength(token, Expression_AfterValueOperations());
+
+            return Expression_AfterValueOperations();
+        }
+
         Expression Expression_AfterValueOperations(bool requireNamed = false)
         {
-            var exp = Expression_GroupedEquation();
+            var exp = Expression_SuperCall();
 
             if (exp == null)
                 return null;
@@ -493,6 +503,24 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
         #endregion
 
+        Expression Expression_SuperCall()
+        {
+            if (AcceptKeyword("super"))
+            {
+                var token = this.token;
+
+                RequireSymbol("(", "'(' required to call a super-method.");
+
+                var parameters = ExpressionList();
+
+                RequireSymbol(")", "')' required to close super-method call.");
+
+                return new SuperCall(token, parameters.ToArray());
+            }
+
+            return Expression_GroupedEquation();
+        }
+
         Expression Expression_GroupedEquation()
         {
             if (AcceptSymbol("("))
@@ -521,6 +549,8 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 return new Null(token);
             else if (AcceptKeyword("this"))
                 return new This(token);
+            else if (AcceptSymbol("..."))
+                return new Vararg(token);
 
             return Expression_Table();
         }
@@ -557,7 +587,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                     {
                         if (AcceptIdentifier())
                         {
-                            key = new Variable(token, token.Value);
+                            key = new StringType(token, token.Value);
 
                             if (!AcceptSymbol("="))
                                 PrevToken();
@@ -575,7 +605,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
                         var value = Expression("Table value expected.");
 
-                        values.Add(new Tuple<Expression, Expression>(key, value));
+                        values.Add(new Tuple<Expression, Expression>(null, value));
                     }
 
                     foundComma = AcceptSymbol(",");

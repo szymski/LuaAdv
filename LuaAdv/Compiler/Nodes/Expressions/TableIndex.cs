@@ -13,7 +13,7 @@ namespace LuaAdv.Compiler.Nodes.Expressions.BasicTypes
             this.key = index;
         }
 
-        public override Token Token { get; }
+        public override Token Token => table.Token;
 
         public override Node[] Children => new Node[] { table, key };
 

@@ -30,7 +30,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
         {
             List<Tuple<Token, Expression, Sequence>> ifs = new List<Tuple<Token, Expression, Sequence>>();
 
-            while (AcceptKeyword("if", "else"))
+            while (ifs.Count == 0 ? AcceptKeyword("if") : AcceptKeyword("if", "else"))
             {
                 var ifToken = token;
 
@@ -239,7 +239,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             else if (local)
                 PrevToken();
 
-            return Statement_LocalVariablesDeclaration();
+            return Statement_Class();
         }
 
         Statement Statement_Method(Token funcToken, NamedVariable tableName)
@@ -265,6 +265,17 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
         }
 
         // TODO: Class
+        Statement Statement_Class()
+        {
+            var local = AcceptKeyword("local");
+
+            if (AcceptKeyword("class"))
+                return ParseClass(token, local);
+            else if(local)
+                PrevToken();
+
+            return Statement_LocalVariablesDeclaration();
+        }
 
         Statement Statement_LocalVariablesDeclaration()
         {
@@ -347,6 +358,22 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
                 return new StatementExpression(exp);
             }
+
+            return Statement_Comment();
+        }
+
+        Statement Statement_Comment()
+        {
+            if(AcceptToken<TokenComment>())
+                return new CommentNode(token);
+
+            return Statement_DocumentationComment();
+        }
+
+        Statement Statement_DocumentationComment()
+        {
+            if (AcceptToken<TokenComment>())
+                return new DocumentationCommentNode(token);
 
             return Statement_Null();
         }

@@ -12,6 +12,13 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public List<FunctionInformation> Functions = new List<FunctionInformation>();
 
+        private string _functionName = null;
+        public string FunctionName
+        {
+            get { return _functionName ?? Parent?.FunctionName; }
+            set { _functionName = value; }
+        }
+
         public Scope(Scope parent = null)
         {
             Parent = parent;

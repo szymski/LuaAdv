@@ -14,6 +14,7 @@ namespace LuaAdvTests
             Lexer lexer = new Lexer(code);
             SyntaxAnalyzer syntaxAnalyzer = new SyntaxAnalyzer(lexer.Output);
             SemanticAnalyzer1 semanticAnalyzer1 = new SemanticAnalyzer1(syntaxAnalyzer.OutputNode);
+            syntaxAnalyzer.OutputNode.Accept(semanticAnalyzer1);
 
             return semanticAnalyzer1;
         }

@@ -44,6 +44,7 @@ namespace LuaAdv.Compiler
             { "public", "public" },
             { "new", "new" },
             { "is", "is" },
+            { "super", "super" }
         };
 
         public static Hashtable Symbols = new Hashtable()

@@ -10,7 +10,6 @@ using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Statements;
 
 [assembly: InternalsVisibleTo("LuaAdvTests")] // TODO: Move this somewhere else
-
 namespace LuaAdv.Compiler.SyntaxAnalyzer
 {
     public partial class SyntaxAnalyzer
@@ -64,11 +63,23 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
         {
             List<Tuple<Token, string, Expression>> list = new List<Tuple<Token, string, Expression>>();
 
+            bool varargAlreadyAccepted = false;
+
             do
             {
-                var identAccepted = AcceptIdentifier();
+                var identAccepted = AcceptIdentifier() || AcceptKeyword("this");
+                if (!identAccepted && AcceptSymbol("..."))
+                {
+                    varargAlreadyAccepted = true;
+                    list.Add(new Tuple<Token, string, Expression>(token, "...", null));
+                    continue;
+                }
+
                 if (!identAccepted && list.Count == 0)
                     return list;
+
+                if (varargAlreadyAccepted)
+                    ThrowException("Vararg '...' can only be used as the last parameter.");
 
                 var identToken = token;
                 var ident = token.Value;

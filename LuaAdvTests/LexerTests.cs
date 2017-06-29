@@ -149,7 +149,12 @@ comment */
 multi
 line
 */ ident /*
-*/");
+*/
+
+        RACING2.Hook.List = { }; // Value: { EventName, Identifier }
+
+    TrackSettings = 2, // Also settings NPC position
+");
 
             int id = 0;
 

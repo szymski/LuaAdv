@@ -15,6 +15,7 @@ using LuaAdv.Compiler.Nodes.Expressions.Unary.Post;
 using LuaAdv.Compiler.Nodes.Expressions.Unary.Pre;
 using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
+using LuaAdv.Compiler.SemanticAnalyzer1;
 
 namespace LuaAdv.Compiler.CodeGenerators.Lua
 {
@@ -23,40 +24,64 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
         public Node MainNode { get; }
 
         private SourceCodeBuilder builder = new SourceCodeBuilder();
-        private Queue<string> beforeQueue = new Queue<string>();
-        private Queue<string> afterQueue = new Queue<string>();
+        private Stack<Queue<string>> beforeQueue = new Stack<Queue<string>>();
+        private Stack<Queue<string>> afterQueue = new Stack<Queue<string>>();
+
+        public Scope MainScope { get; protected set; }
+        public Scope CurrentScope { get; protected set; }
 
         public string Output => builder.Output;
 
         public LuaCodeGenerator(Node mainNode)
         {
+            beforeQueue.Push(new Queue<string>());
+            afterQueue.Push(new Queue<string>());
+
             MainNode = mainNode;
             mainNode.Accept(this);
+
+            MainScope = (mainNode as ScopeNode).scope;
         }
 
         void PushTab() => builder.Tabs++;
         void PopTab() => builder.Tabs--;
 
-        void PushBefore()
+        void Push()
         {
             builder.PushStringBuilder();
+            beforeQueue.Push(new Queue<string>());
+            afterQueue.Push(new Queue<string>());
+        }
+
+        void Pop()
+        {
+            builder.PopStringBuilder();
+            beforeQueue.Pop();
+            afterQueue.Pop();
+        }
+
+        void PushBefore()
+        {
+            Push();
         }
 
         void PopBefore()
         {
-            beforeQueue.Enqueue(builder.Output);
-            builder.PopStringBuilder();
+            var data = builder.Output;
+            Pop();
+            beforeQueue.Peek().Enqueue(data);
         }
 
         void PushAfter()
         {
-            builder.PushStringBuilder();
+            Push();
         }
 
         void PopAfter()
         {
-            afterQueue.Enqueue(builder.Output);
-            builder.PopStringBuilder();
+            var data = builder.Output;
+            Pop();
+            afterQueue.Peek().Enqueue(data);
         }
 
         public Node Visit(Node node)
@@ -69,28 +94,98 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             throw new NotImplementedException(node.GetType().Name + " analysis not implemented!");
         }
 
+        #region Scopes
+
+        public virtual Node Visit(ScopeNode node)
+        {
+            var oldScope = CurrentScope;
+            CurrentScope = node.scope;
+            node.node.Accept(this);
+            CurrentScope = oldScope;
+
+            return node;
+        }
+
+        public ScopeNode PushScope(Node innerNode)
+        {
+            return new ScopeNode(innerNode, new Scope(CurrentScope));
+        }
+
+        #endregion
+
         public Node Visit(For node)
         {
+            // TODO: Rewrite to use Lua for loop
+
+            //Node init = node.init;
+
+            //if (init is LocalVariablesDeclaration)
+            //{
+            //    var localVarDecl = (LocalVariablesDeclaration) init;
+            //    init = new GlobalVariablesDeclaration();
+            //}
+
+            PushBefore();
             node.init.Accept(this);
+            PopBefore();
+
+            builder.Append("while ");
             node.condition.Accept(this);
-            node.after.Accept(this);
+            builder.AppendLine(" do");
+
+            PushTab();
             node.sequence.Accept(this);
+            node.after.Accept(this);
+            PopTab();
+
+            builder.AppendLine();
+            builder.AppendLine("end");
 
             return node;
         }
 
         public Node Visit(Foreach node)
         {
+            builder.Append("for {0}, {1} in pairs(", node.keyName ?? "_", node.varName);
             node.table.Accept(this);
+            builder.AppendLine(") do");
+            PushTab();
             node.sequence.Accept(this);
+            PopTab();
+            builder.AppendLine();
+            builder.AppendLine("end");
 
             return node;
         }
 
         public Node Visit(While node)
         {
+            // TODO: Fix after and before queue
+
+            builder.Append("while ");
+            Push();
             node.condition.Accept(this);
+            string sequence = builder.Output;
+            var queueBefore = beforeQueue.Peek();
+            var queueAfter = afterQueue.Peek();
+            Pop();
+            builder.Append(sequence);
+            builder.AppendLine(" do");
+
+            PushTab();
+
+            while (queueBefore.Count > 0)
+                builder.AppendLine(queueBefore.Dequeue());
+
+            while (queueAfter.Count > 0)
+                builder.AppendLine(queueAfter.Dequeue());
+
             node.sequence.Accept(this);
+
+            PopTab();
+
+            builder.AppendLine();
+            builder.AppendLine("end");
 
             return node;
         }
@@ -113,20 +208,22 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
         {
             for (int i = 0; i < node.nodes.Length; i++)
             {
-                builder.PushStringBuilder();
+                Push();
                 node.nodes[i].Accept(this);
                 string sequence = builder.Output;
-                builder.PopStringBuilder();
+                var queueBefore = beforeQueue.Peek();
+                var queueAfter = afterQueue.Peek();
+                Pop();
 
-                while (beforeQueue.Count > 0)
-                    builder.AppendLine(beforeQueue.Dequeue());
+                while (queueBefore.Count > 0)
+                    builder.AppendLine(queueBefore.Dequeue());
 
                 builder.Append(sequence);
 
-                while (afterQueue.Count > 0)
+                while (queueAfter.Count > 0)
                 {
                     builder.AppendLine();
-                    builder.Append(afterQueue.Dequeue());
+                    builder.Append(queueAfter.Dequeue());
                 }
 
                 if (i != node.nodes.Length - 1)
@@ -138,7 +235,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(If node)
         {
-            for(int i = 0; i < node.ifs.Count; i++)
+            for (int i = 0; i < node.ifs.Count; i++)
             {
                 var ifChild = node.ifs[i];
 
@@ -193,7 +290,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(StatementFunctionDeclaration node)
         {
-            if(node.local)
+            if (node.local)
                 builder.Append("local ");
             builder.Append("function ");
             node.name.Accept(this);
@@ -201,8 +298,11 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
             for (int i = 0; i < node.parameterList.Count; i++)
             {
-                builder.Append(node.parameterList[i].Item2);
-                if(i != node.parameterList.Count - 1)
+                if (node.parameterList[i].Item2 == "this")
+                    builder.Append("self");
+                else
+                    builder.Append(node.parameterList[i].Item2);
+                if (i != node.parameterList.Count - 1)
                     builder.Append(", ");
             }
 
@@ -211,10 +311,10 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
             for (int i = 0; i < node.parameterList.Count; i++)
             {
-                if(node.parameterList[i].Item3 == null)
+                if (node.parameterList[i].Item3 == null)
                     continue;
 
-                builder.Append("if !{0} then {0} = ", node.parameterList[i].Item2);
+                builder.Append("if not {0} then {0} = ", node.parameterList[i].Item2);
                 node.parameterList[i].Item3.Accept(this);
                 builder.AppendLine(" end");
             }
@@ -230,30 +330,51 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(StatementLambdaFunctionDeclaration node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
-
-            node.expression.Accept(this);
+            // This is supposed to be lowered by the semantic analyser
 
             return node;
         }
 
         public Node Visit(StatementLambdaMethodDeclaration node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
-
-            node.expression.Accept(this);
+            // This is supposed to be lowered by the semantic analyser
 
             return node;
         }
 
         public Node Visit(StatementMethodDeclaration node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
+            builder.Append("function ");
+            node.tableName.Accept(this);
+            builder.Append(":");
+            builder.Append(node.name);
+            builder.Append("(");
+
+            for (int i = 0; i < node.parameterList.Count; i++)
+            {
+                builder.Append(node.parameterList[i].Item2);
+                if (i != node.parameterList.Count - 1)
+                    builder.Append(", ");
+            }
+
+            builder.AppendLine(")");
+            PushTab();
+
+            for (int i = 0; i < node.parameterList.Count; i++)
+            {
+                if (node.parameterList[i].Item3 == null)
+                    continue;
+
+                builder.Append("if not {0} then {0} = ", node.parameterList[i].Item2);
+                node.parameterList[i].Item3.Accept(this);
+                builder.AppendLine(" end");
+            }
 
             node.sequence.Accept(this);
+
+            PopTab();
+            builder.AppendLine();
+            builder.AppendLine("end");
 
             return node;
         }
@@ -263,7 +384,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             for (int i = 0; i < node.variables.Length; i++)
             {
                 node.variables[i].Accept(this);
-                if(i != node.variables.Length - 1)
+                if (i != node.variables.Length - 1)
                     builder.Append(", ");
             }
 
@@ -310,15 +431,26 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(StatementExpression node)
         {
-            bool pushEntire = node.expression is FunctionCall || node.expression is MethodCall;
+            bool pushEntire = node.expression is FunctionCall || node.expression is MethodCall || node.expression is SuperCall;
 
-            if(!pushEntire)
-                builder.PushStringBuilder();
+            if (pushEntire)
+                node.expression.Accept(this);
+            else
+            {
+                Push();
+                node.expression.Accept(this);
+                var queueBefore = beforeQueue.Peek();
+                var queueAfter = afterQueue.Peek();
+                Pop();
 
-            node.expression.Accept(this);
+                builder.AppendLine();
 
-            if (!pushEntire)
-                builder.PopStringBuilder();
+                foreach (var value in queueBefore)
+                    builder.AppendLine(value);
+
+                foreach (var value in queueAfter)
+                    builder.AppendLine(value);
+            }
 
             return node;
         }
@@ -708,7 +840,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(Not node)
         {
-            builder.Append("!");
+            builder.Append("not ");
             node.expression.Accept(this);
 
             return node;
@@ -716,20 +848,50 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(AnonymousFunction node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
+            //foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
+            //    defExp.Accept(this);
+
+            //node.sequence.Accept(this);
+
+            builder.Append("function(");
+
+            for (int i = 0; i < node.parameterList.Count; i++)
+            {
+                if (node.parameterList[i].Item2 == "this")
+                    builder.Append("self");
+                else
+                    builder.Append(node.parameterList[i].Item2);
+                if (i != node.parameterList.Count - 1)
+                    builder.Append(", ");
+            }
+
+            builder.AppendLine(")");
+            PushTab();
+
+            for (int i = 0; i < node.parameterList.Count; i++)
+            {
+                if (node.parameterList[i].Item3 == null)
+                    continue;
+
+                builder.Append("if not {0} then {0} = ", node.parameterList[i].Item2);
+                node.parameterList[i].Item3.Accept(this);
+                builder.AppendLine(" end");
+            }
 
             node.sequence.Accept(this);
+
+            PopTab();
+            builder.AppendLine();
+            builder.AppendLine("end");
+
+            return node;
 
             return node;
         }
 
         public Node Visit(AnonymousLambdaFunction node)
         {
-            foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
-                defExp.Accept(this);
-
-            node.expression.Accept(this);
+            // TODO: This should be lowered to AnonymousFunction
 
             return node;
         }
@@ -743,7 +905,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             for (int i = 0; i < node.parameters.Length; i++)
             {
                 node.parameters[i].Accept(this);
-                if(i != node.parameters.Length - 1)
+                if (i != node.parameters.Length - 1)
                     builder.Append(", ");
             }
 
@@ -766,6 +928,29 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             node.methodTable.Accept(this);
 
             builder.Append(":{0}(", node.name);
+
+            for (int i = 0; i < node.parameters.Length; i++)
+            {
+                node.parameters[i].Accept(this);
+                if (i != node.parameters.Length - 1)
+                    builder.Append(", ");
+            }
+
+            builder.Append(")");
+
+            return node;
+        }
+
+        public Node Visit(SuperCall node)
+        {
+            // TODO: This should be moved to the semantic analyzer.
+            if(CurrentScope.FunctionName == null)
+                throw new CompilerException("Super-method cannot be called in an no-name function.", node.Token.Line, node.Token.Character);
+
+            builder.Append("getmetatable(self).__baseclass.{0}(self", CurrentScope.FunctionName);
+
+            if (node.parameters.Length > 0)
+                builder.Append(", ");
 
             for (int i = 0; i < node.parameters.Length; i++)
             {
@@ -812,10 +997,17 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(Table node)
         {
+            if (node.values.Length == 0)
+            {
+                builder.Append("{ }");
+                return node;
+            }
+
             builder.AppendLine("{");
+            PushTab();
             foreach (var key in node.values)
             {
-                if (key.Item2 != null)
+                if (key.Item1 != null)
                 {
                     builder.Append("[");
                     key.Item1.Accept(this);
@@ -823,10 +1015,11 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
                     key.Item2.Accept(this);
                 }
                 else
-                    key.Item1.Accept(this);
+                    key.Item2.Accept(this);
 
                 builder.AppendLine(",");
             }
+            PopTab();
             builder.Append("}");
 
             return node;
@@ -891,9 +1084,81 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             return node;
         }
 
-        public Node Visit(ScopeNode node)
+        public Node Visit(TableLength node)
         {
-            throw new NotImplementedException();
+            builder.Append("#");
+            node.table.Accept(this);
+
+            return node;
+        }
+
+        public Node Visit(CommentNode node)
+        {
+            return node;
+        }
+
+        public Node Visit(DocumentationCommentNode node)
+        {
+            return node;
+        }
+
+        private const string ClassIndexFunctionBody = @"function(tbl, key)
+    local meta = getmetatable(tbl)
+    
+    local field = meta[key]
+    if field then
+        return field
+    end
+    
+    local base = meta.__baseclass
+    if base then
+        return base[key]
+    end
+end";
+
+        public Node Visit(Class node)
+        {
+            var metatableName = $"C{node.name}";
+
+            // Metatable
+            if (node.local)
+                builder.Append("local ");
+            builder.AppendLine("{0} = {{}}", metatableName);
+            builder.AppendLine("{0}.__index = {1}", metatableName, ClassIndexFunctionBody);
+            builder.AppendLine("{0}.__type = \"{0}\"", metatableName);
+            builder.AppendLine("{0}.__baseclass = nil", metatableName);
+            builder.AppendLine();
+
+            // Inheritance
+            if (!string.IsNullOrEmpty(node.baseClass))
+            {
+                var baseMetatableName = $"C{node.baseClass}";
+                builder.AppendLine("if not {0} then error(\"{1}\") end", baseMetatableName,
+                    $"Base class '{node.baseClass}' not found. Class '{node.name}' could not be constructed.");
+
+                builder.AppendLine("{0}.__baseclass = {1}", metatableName, baseMetatableName);
+            }
+
+            // Constructor
+            if(node.local)
+                builder.Append("local ");
+            builder.AppendLine("function {0}()", node.name);
+            PushTab();
+            builder.AppendLine("local tbl = { }");
+            builder.AppendLine("setmetatable(tbl, {0})", metatableName);
+            builder.AppendLine("tbl:__this()");
+            builder.AppendLine("return tbl");
+            PopTab();
+            builder.AppendLine("end");
+
+            return node;
+        }
+
+        public Node Visit(ClassMethod node)
+        {
+            node.method.Accept(this);
+
+            return node;
         }
     }
 }

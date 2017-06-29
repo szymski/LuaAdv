@@ -106,6 +106,7 @@ namespace LuaAdv.Compiler
         Node Visit(FunctionCall node);
         Node Visit(GroupedEquation node);
         Node Visit(MethodCall node);
+        Node Visit(SuperCall node);
         Node Visit(NullPropagation node);
         Node Visit(ShiftLeft node);
         Node Visit(ShiftRight node);
@@ -117,9 +118,14 @@ namespace LuaAdv.Compiler
         Node Visit(This node);
         Node Visit(Vararg node);
         Node Visit(Null node);
+        Node Visit(TableLength node);
 
         #endregion
 
+        Node Visit(Class node);
+        Node Visit(ClassMethod node);
         Node Visit(ScopeNode node);
+        Node Visit(CommentNode node);
+        Node Visit(DocumentationCommentNode node);
     }
 }

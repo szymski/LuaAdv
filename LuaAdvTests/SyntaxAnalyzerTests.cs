@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Linq;
 using LuaAdv.Compiler;
 using LuaAdv.Compiler.Lexer;
 using LuaAdv.Compiler.Nodes;
@@ -58,6 +59,16 @@ namespace LuaAdvTests
             Assert.IsInstanceOf<Bool>(output.Children[0][2]);
             Assert.IsInstanceOf<Sequence>(output.Children[0][3]);
             Assert.IsInstanceOf<Sequence>(output.Children[0][5]);
+
+            Assert.Throws<SyntaxAnalyzerException>(() =>
+            {
+                Compile("else { func(); }");
+            });
+
+            Assert.Throws<SyntaxAnalyzerException>(() =>
+            {
+                Compile("if(true) { } else { } else { }");
+            });
         }
 
         [Test]
@@ -398,6 +409,38 @@ namespace LuaAdvTests
             {
                 Compile("andthis.one().too;");
             });
+        }
+
+        [Test]
+        public void test_classes()
+        {
+            Lexer lexer = new Lexer(@"
+class Test {
+    var a = 1;
+    var b, c = 2, 3;
+    var d, e = 4;
+
+    function this(param) {
+        
+    }
+
+    function Derp() {
+        
+    }
+}
+");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output);
+
+            var classNode = analyzer.OutputNode.Children[0] as Class;
+
+            Assert.IsNotNull(classNode);
+            Assert.AreEqual("Test", classNode.name);
+            Assert.AreEqual(null, classNode.baseClass);
+
+            Assert.IsTrue(classNode.methods.Any(f => f.Item1 == "this" && f.Item2[0].Item2 == "param"));
+            Assert.IsTrue(classNode.methods.Any(f => f.Item1 == "Derp" && f.Item2.Length == 0));
+
+            Assert.IsTrue(classNode.fields.Any(f => f.Item1 == "a" && f.Item2 != null && f.Item2 is Number));
         }
     }
 
@@ -946,6 +989,49 @@ namespace LuaAdvTests
                     return currentLanguageTable[value:lower()] ?? (currentLanguageTable[value] ?? value);
                 };
                 setmetatable(BF1HUD.Language, BF1HUD.Language);");
+        }
+
+        [Test]
+        public void test_code_5()
+        {
+            Compile(@"
+RACING2.Hook = { };
+RACING2.Hook.List = { }; // Value: { EventName, Identifier }
+
+function RACING2.Hook.Add(eventName, identifier, func) {
+    var newIdentifier = ""racing2_"" .. identifier;
+
+    hook.Add(eventName, newIdentifier, func);
+
+            RACING2.Hook.List[#RACING2.Hook.List + 1] = { eventName, newIdentifier };
+}
+
+        function RACING2.Hook.Remove(eventName, identifier)
+        {
+            var newIdentifier = ""racing2_""..identifier;
+
+            hook.Remove(eventName, newIdentifier);
+
+            foreach (var key, value in RACING2.Hook.List)
+        if (value[1] == eventName && value[2] == newIdentifier)
+            {
+                table.remove(RACING2.Hook.List, key);
+                break;
+            }
+        }
+
+        function RACING2.Hook.RemoveAll()
+        {
+            foreach (var value in RACING2.Hook.List)
+                hook.Remove(value[1], value[2]);
+
+            RACING2.Hook.List = { };
+
+            RACING2.DebugPrint(""Removed all hooks"");
+        }
+
+        hook.Add(""RACING2_Reload"", ""RACING2_RemoveHooks"", RACING2.Hook.RemoveAll);
+");
         }
     }
 }

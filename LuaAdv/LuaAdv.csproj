@@ -46,6 +46,8 @@
     <Compile Include="Compiler\IAstVisitor.cs" />
     <Compile Include="Compiler\Lexer\Lexer.cs" />
     <Compile Include="Compiler\Lexer\LexerUtils.cs" />
+    <Compile Include="Compiler\Nodes\DocumentationCommentNode.cs" />
+    <Compile Include="Compiler\Nodes\CommentNode.cs" />
     <Compile Include="Compiler\Nodes\Expressions\AnonymousLambdaFunction.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Assignment\ConcatAssignmentOperator.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Assignment\ModuloAssignmentOperator.cs" />
@@ -68,6 +70,8 @@
     <Compile Include="Compiler\Nodes\Expressions\Conditional\ConditionalAnd.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Conditional\ConditionalOr.cs" />
     <Compile Include="Compiler\Nodes\Expressions\NullPropagation.cs" />
+    <Compile Include="Compiler\Nodes\Expressions\SuperCall.cs" />
+    <Compile Include="Compiler\Nodes\Expressions\TableLength.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Ternary.cs" />
     <Compile Include="Compiler\Nodes\Expressions\IStatementable.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Math\Concat.cs" />
@@ -107,6 +111,8 @@
     <Compile Include="Compiler\Nodes\Expressions\Expression.cs" />
     <Compile Include="Compiler\Nodes\Node.cs" />
     <Compile Include="Compiler\Nodes\ScopeNode.cs" />
+    <Compile Include="Compiler\Nodes\Statements\Class.cs" />
+    <Compile Include="Compiler\Nodes\Statements\ClassMethod.cs" />
     <Compile Include="Compiler\Nodes\Statements\GlobalVariablesDeclaration.cs" />
     <Compile Include="Compiler\Nodes\Statements\LocalVariablesDeclaration.cs" />
     <Compile Include="Compiler\Nodes\Statements\StatementExpression.cs" />
@@ -124,11 +130,14 @@
     <Compile Include="Compiler\Nodes\Statements\NullStatement.cs" />
     <Compile Include="Compiler\Nodes\Statements\Sequence.cs" />
     <Compile Include="Compiler\Nodes\Statements\Statement.cs" />
-    <Compile Include="Compiler\SemanticAnalyzer1\FunctionInformation.cs" />
-    <Compile Include="Compiler\SemanticAnalyzer1\Scope.cs" />
-    <Compile Include="Compiler\SemanticAnalyzer1\SemanticAnalyzer1.cs" />
-    <Compile Include="Compiler\SemanticAnalyzer1\VariableInformation.cs" />
+    <Compile Include="Compiler\SemanticAnalyzer\FunctionInformation.cs" />
+    <Compile Include="Compiler\SemanticAnalyzer\Scope.cs" />
+    <Compile Include="Compiler\SemanticAnalyzer\SemanticAnalyzer2.cs" />
+    <Compile Include="Compiler\SemanticAnalyzer\TransparentVisitor.cs" />
+    <Compile Include="Compiler\SemanticAnalyzer\SemanticAnalyzer1.cs" />
+    <Compile Include="Compiler\SemanticAnalyzer\VariableInformation.cs" />
     <Compile Include="Compiler\Specification.cs" />
+    <Compile Include="Compiler\SyntaxAnalyzer\SyntaxAnalyzerClass.cs" />
     <Compile Include="Compiler\SyntaxAnalyzer\SyntaxAnalyzerExceptions.cs" />
     <Compile Include="Compiler\SyntaxAnalyzer\SyntaxAnalyzerExpressions.cs" />
     <Compile Include="Compiler\SyntaxAnalyzer\SyntaxAnalyzerStatements.cs" />
