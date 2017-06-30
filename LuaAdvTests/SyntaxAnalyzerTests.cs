@@ -904,6 +904,57 @@ class Test {
 
             Assert.Throws<SyntaxAnalyzerException>(() => Compile("5 += 10"));
         }
+
+        [Test]
+        public void test_quick_lambda()
+        {
+            {
+                Lexer lexer = new Lexer("a => 5");
+                SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+                Expression exp = analyzer.Expression();
+                Assert.IsInstanceOf<AnonymousLambdaFunction>(exp);
+                Assert.AreEqual("a", (exp as AnonymousLambdaFunction).parameterList[0].Item2);
+            }
+
+            {
+                Lexer lexer = new Lexer("(a) => 123");
+                SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+                Expression exp = analyzer.Expression();
+                Assert.IsInstanceOf<AnonymousLambdaFunction>(exp);
+                Assert.AreEqual("a", (exp as AnonymousLambdaFunction).parameterList[0].Item2);
+            }
+
+            {
+                Lexer lexer = new Lexer("(a, b) => a + b");
+                SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+                Expression exp = analyzer.Expression();
+                Assert.IsInstanceOf<AnonymousLambdaFunction>(exp);
+                Assert.AreEqual("a", (exp as AnonymousLambdaFunction).parameterList[0].Item2);
+                Assert.AreEqual("b", (exp as AnonymousLambdaFunction).parameterList[1].Item2);
+            }
+
+            {
+                Lexer lexer = new Lexer("a => { return 5; }");
+                SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+                Expression exp = analyzer.Expression();
+                Assert.IsInstanceOf<AnonymousFunction>(exp);
+                Assert.AreEqual("a", (exp as AnonymousFunction).parameterList[0].Item2);
+            }
+
+            {
+                Lexer lexer = new Lexer("(a, b) => { return a + b; }");
+                SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+                Expression exp = analyzer.Expression();
+                Assert.IsInstanceOf<AnonymousFunction>(exp);
+                Assert.AreEqual("a", (exp as AnonymousFunction).parameterList[0].Item2);
+                Assert.AreEqual("b", (exp as AnonymousFunction).parameterList[1].Item2);
+            }
+        }
     }
 
     [TestFixture]

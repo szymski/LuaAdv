@@ -11,8 +11,6 @@ namespace LuaAdv.Compiler.Nodes.Expressions
     public class AnonymousLambdaFunction : Expression
     {
         public Token funcToken;
-        public Token nameToken;
-        public string name;
         public List<Tuple<Token, string, Expression>> parameterList;
         public Expression expression;
 

@@ -91,6 +91,12 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public override Node Visit(StatementFunctionDeclaration node)
         {
+            var scope = new Scope(CurrentScope);
+            var previousScope = CurrentScope;
+            CurrentScope = scope;
+
+            CurrentScope.FunctionName = NamedVariablesToStringName(node.name);
+
             for (int i = 0; i < node.parameterList.Count; i++)
                 if (node.parameterList[i].Item3 != null)
                     node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
@@ -99,87 +105,156 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             {
                 Line = node.funcToken.Line,
                 Character = node.funcToken.Character,
-                Name = node.name.Token.Value,
+                IsMethod = false,
+                Name = CurrentScope.FunctionName,
                 ParameterList = node.parameterList.Select(p => new Tuple<string, string>(p.Item2, p.Item3?.Token.Value ?? "")).ToList(),
                 ReturnType = "" // TODO: Return type analysis
             };
 
-            CurrentScope.Functions.Add(information);
+            previousScope.Functions.Add(information);
 
-            node.sequence = PushScope(node.sequence).Accept(this);
+            node.sequence = node.sequence.Accept(this);
 
-            return node;
+            CurrentScope = previousScope;
+
+            return new ScopeNode(node, scope);
+        }
+
+        // TODO: Move somewhere else.
+        private string NamedVariablesToStringName(Expression node)
+        {
+            if (node is Variable)
+                return (node as Variable).name;
+            else if (node is TableDotIndex)
+                return $"{NamedVariablesToStringName((node as TableDotIndex).table)}.{(node as TableDotIndex).index}";
+            else
+                return "INVALID";
         }
 
         public override Node Visit(StatementLambdaFunctionDeclaration node)
         {
+            var scope = new Scope(CurrentScope);
+            var previousScope = CurrentScope;
+            CurrentScope = scope;
+
+            CurrentScope.FunctionName = NamedVariablesToStringName(node.name);
+
             for (int i = 0; i < node.parameterList.Count; i++)
                 if (node.parameterList[i].Item3 != null)
                     node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.expression = PushScope(node.expression).Accept(this);
+            var information = new FunctionInformation()
+            {
+                Line = node.funcToken.Line,
+                Character = node.funcToken.Character,
+                IsMethod = false,
+                Name = CurrentScope.FunctionName,
+                ParameterList = node.parameterList.Select(p => new Tuple<string, string>(p.Item2, p.Item3?.Token.Value ?? "")).ToList(),
+                ReturnType = "" // TODO: Return type analysis
+            };
 
-            return node;
+            previousScope.Functions.Add(information);
+
+            node.expression = node.expression.Accept(this);
+
+            CurrentScope = previousScope;
+
+            return new ScopeNode(node, scope);
         }
 
         public override Node Visit(StatementLambdaMethodDeclaration node)
         {
+            var scope = new Scope(CurrentScope);
+            var previousScope = CurrentScope;
+            CurrentScope = scope;
+
+            CurrentScope.FunctionName = $"{NamedVariablesToStringName(node.tableName)}:{node.name}";
+
             for (int i = 0; i < node.parameterList.Count; i++)
                 if (node.parameterList[i].Item3 != null)
                     node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.expression = PushScope(node.expression).Accept(this);
+            var information = new FunctionInformation()
+            {
+                Line = node.funcToken.Line,
+                Character = node.funcToken.Character,
+                Name = CurrentScope.FunctionName,
+                IsMethod = true,
+                ParameterList = node.parameterList.Select(p => new Tuple<string, string>(p.Item2, p.Item3?.Token.Value ?? "")).ToList(),
+                ReturnType = "" // TODO: Return type analysis
+            };
 
-            return node;
+            previousScope.Functions.Add(information);
+
+            node.expression = node.expression.Accept(this);
+
+            CurrentScope = previousScope;
+
+            return new ScopeNode(node, scope);
         }
 
         public override Node Visit(StatementMethodDeclaration node)
         {
+            var scope = new Scope(CurrentScope);
+            var previousScope = CurrentScope;
+            CurrentScope = scope;
+
+            CurrentScope.FunctionName = $"{NamedVariablesToStringName(node.tableName)}:{node.name}";
+
             for (int i = 0; i < node.parameterList.Count; i++)
                 if (node.parameterList[i].Item3 != null)
                     node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.sequence = PushScope(node.sequence).Accept(this);
+            var information = new FunctionInformation()
+            {
+                Line = node.funcToken.Line,
+                Character = node.funcToken.Character,
+                Name = CurrentScope.FunctionName,
+                IsMethod = true,
+                ParameterList = node.parameterList.Select(p => new Tuple<string, string>(p.Item2, p.Item3?.Token.Value ?? "")).ToList(),
+                ReturnType = "" // TODO: Return type analysis
+            };
 
-            return node;
+            previousScope.Functions.Add(information);
+
+            node.sequence = node.sequence.Accept(this);
+
+            CurrentScope = previousScope;
+
+            return new ScopeNode(node, scope);
         }
-
-        public override Node Visit(GlobalVariablesDeclaration node)
+        public virtual Node Visit(AnonymousFunction node)
         {
-            for (int i = 0; i < node.values.Length; i++)
-                node.values[i] = (Expression)node.values[i].Accept(this);
+            var scope = new Scope(CurrentScope);
+            var previousScope = CurrentScope;
+            CurrentScope = scope;
 
-            return node;
-        }
-
-        public override Node Visit(LocalVariablesDeclaration node)
-        {
-            for (var i = 0; i < node.values.Length; i++)
-                node.values[i] = (Expression)node.values[i].Accept(this);
-
-            return node;
-        }
-
-        public override Node Visit(AnonymousFunction node)
-        {
             for (int i = 0; i < node.parameterList.Count; i++)
                 if (node.parameterList[i].Item3 != null)
                     node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
-            node.sequence = (Expression)node.sequence.Accept(this);
+            node.sequence = node.sequence.Accept(this);
 
-            return node;
+            CurrentScope = previousScope;
+
+            return new ScopeNode(node, scope);
         }
 
         public override Node Visit(AnonymousLambdaFunction node)
         {
+            var scope = new Scope(CurrentScope);
+            var previousScope = CurrentScope;
+            CurrentScope = scope;
+
             for (int i = 0; i < node.parameterList.Count; i++)
                 if (node.parameterList[i].Item3 != null)
                     node.parameterList[i] = new Tuple<Token, string, Expression>(node.parameterList[i].Item1, node.parameterList[i].Item2, (Expression)node.parameterList[i].Item3.Accept(this));
 
             node.expression = (Expression)node.expression.Accept(this);
 
-            return node;
+            CurrentScope = scope;
+
+            return new ScopeNode(node, scope);
         }
     }
 }

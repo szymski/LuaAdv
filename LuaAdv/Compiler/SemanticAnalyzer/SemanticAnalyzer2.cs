@@ -13,6 +13,9 @@ using LuaAdv.Compiler.SemanticAnalyzer1;
 
 namespace LuaAdv.Compiler.SemanticAnalyzer
 {
+    /// <summary>
+    /// Does lowering (replaces complex nodes with simpler ones) and validates correctness.
+    /// </summary>
     public class SemanticAnalyzer2 : TransparentVisitor
     {
         public SemanticAnalyzer2(Node mainNode) : base(mainNode)
@@ -21,22 +24,29 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
         public override Node Visit(StatementLambdaFunctionDeclaration node)
         {
-            var newNode = new StatementFunctionDeclaration(node.local, node.funcToken, node.name, node.parameterList, new Sequence(node.expression.Token, new Node[] { new Return(node.expression.Token, new[] { (Expression)node.expression }) }));
-            newNode.Accept(this);
+            Node newNode = new StatementFunctionDeclaration(node.local, node.funcToken, node.name, node.parameterList, new Sequence(node.expression.Token, new Node[] { new Return(node.expression.Token, new[] { (Expression)node.expression }) }));
+            newNode = newNode.Accept(this);
             return newNode;
         }
 
         public override Node Visit(StatementLambdaMethodDeclaration node)
         {
-            var newNode = new StatementMethodDeclaration(node.funcToken, node.tableName, node.name, node.parameterList, new Sequence(node.expression.Token, new Node[] { new Return(node.expression.Token, new[] { (Expression)node.expression }) }));
-            newNode.Accept(this);
+            Node newNode = new StatementMethodDeclaration(node.funcToken, node.tableName, node.name, node.parameterList, new Sequence(node.expression.Token, new Node[] { new Return(node.expression.Token, new[] { (Expression)node.expression }) }));
+            newNode = newNode.Accept(this);
+            return newNode;
+        }
+
+        public override Node Visit(AnonymousLambdaFunction node)
+        {
+            Node newNode = new AnonymousFunction(node.funcToken, node.parameterList, new Sequence(null, new Node[] { new Return(null, new[] { node.expression }) }));
+            newNode = newNode.Accept(this);
             return newNode;
         }
 
         public override Node Visit(Class node)
         {
             var newFields = new List<Tuple<string, Expression>>();
-            foreach (var field in node.fields)
+            foreach (var field in node.fields.Where(f => f.Item2 != null))
                 newFields.Add(new Tuple<string, Expression>(field.Item1, (Expression)field.Item2.Accept(this)));
 
             node.fields = newFields.ToArray();
@@ -91,14 +101,15 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             if (constructorMethod == null)
             {
-                initializerNodes.Insert(0, new StatementExpression(new SuperCall(null, new Expression[0])));
+                if (node.baseClass != null)
+                    initializerNodes.Insert(0, new StatementExpression(new SuperCall(null, new Expression[0])));
                 constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Sequence>("__this", new Tuple<Token, string, Expression>[0], new Sequence(null, initializerNodes.ToArray()));
             }
             else
             {
                 var sequence = initializerNodes.Concat(constructorMethod.Item3.nodes);
                 constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Sequence>("__this", constructorMethod.Item2, new Sequence(null, sequence.ToArray()));
-            } 
+            }
 
             var constructorDeclaration =
                 new StatementMethodDeclaration(node.Token /* TODO: This should be a function token */,

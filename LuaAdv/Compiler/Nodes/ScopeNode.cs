@@ -19,5 +19,7 @@ namespace LuaAdv.Compiler.Nodes
         }
 
         public override Token Token { get; }
+
+        public override Node[] Children => new[] { node };
     }
 }

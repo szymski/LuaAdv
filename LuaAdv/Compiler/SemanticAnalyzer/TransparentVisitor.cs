@@ -45,7 +45,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         {
             var oldScope = CurrentScope;
             CurrentScope = node.scope;
-            node.node.Accept(this);
+            node.node = node.node.Accept(this);
             CurrentScope = oldScope;
 
             return node;
@@ -173,15 +173,15 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         public virtual Node Visit(GlobalVariablesDeclaration node)
         {
             for (int i = 0; i < node.values.Length; i++)
-                node.values[i] = (Expression)node.values[i].Accept(this);
+                node.values[i] = node.values[i].Accept(this);
 
             return node;
         }
 
         public virtual Node Visit(LocalVariablesDeclaration node)
         {
-            for (var i = 0; i < node.values.Length; i++)
-                node.values[i] = (Expression)node.values[i].Accept(this);
+            for (int i = 0; i < node.values.Length; i++)
+                node.values[i] = node.values[i].Accept(this);
 
             return node;
         }
@@ -501,7 +501,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             node.function = (Expression)node.function.Accept(this);
 
             for (var i = 0; i < node.parameters.Length; i++)
-                node.parameters[i] = (Expression)node.parameters[i].Accept(this);
+                node.parameters[i] = node.parameters[i].Accept(this);
 
             return node;
         }
@@ -557,10 +557,11 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public virtual Node Visit(Table node)
         {
-            for (int index = 0; index < node.values.Length; index++)
+            for (int i = 0; i < node.values.Length; i++)
             {
-                var key = node.values[index];
-                node.values[index] = new Tuple<Expression, Expression>((Expression)key.Item1.Accept(this), key.Item2?.Accept(this) as Expression);
+                // TODO: Convert expressions to nodes.
+                var key = node.values[i];
+                node.values[i] = new Tuple<Expression, Expression>(key.Item1 != null ? (Expression)key.Item1.Accept(this) : null, key.Item2?.Accept(this) as Expression);
             }
 
             return node;
@@ -629,8 +630,8 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         public virtual Node Visit(Class node)
         {
             var newFields = new List<Tuple<string, Expression>>();
-            foreach (var field in node.fields)
-                newFields.Add(new Tuple<string, Expression>(field.Item1, (Expression)field.Item2.Accept(this)));
+            foreach (var field in node.fields.Where(f => f.Item2 != null))
+                newFields.Add(new Tuple<string, Expression>(field.Item1,(Expression)field.Item2.Accept(this)));
 
             node.fields = newFields.ToArray();
 

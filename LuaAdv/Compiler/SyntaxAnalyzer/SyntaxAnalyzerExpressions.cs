@@ -490,7 +490,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
         /// </summary>
         Expression Expression_FunctionCall(Expression exp)
         {
-            var parameters = ExpressionList();
+            Node[] parameters = ExpressionList().Cast<Node>().ToArray();
 
             // Default parameter, we are parsing named variable
             if (AcceptSymbol("="))
@@ -498,7 +498,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
             RequireSymbol(")", "')' required to close function call.");
 
-            return new FunctionCall(exp, parameters.ToArray());
+            return new FunctionCall(exp, parameters);
         }
 
         #endregion
@@ -518,7 +518,36 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 return new SuperCall(token, parameters.ToArray());
             }
 
-            return Expression_GroupedEquation();
+            return Expression_QuickAnonymousFunction();
+        }
+
+        Expression Expression_QuickAnonymousFunction()
+        {
+            var exp = Expression_GroupedEquation();
+
+            if (AcceptSymbol("=>"))
+            {
+                if (exp is GroupedEquation)
+                    exp = (exp as GroupedEquation).expression;
+
+                if(exp is Variable == false)
+                    ThrowException("Invalid lambda parameter.");
+
+                var paramList = new List<Tuple<Token, string, Expression>>();
+                paramList.Add(new Tuple<Token, string, Expression>(exp.Token, (exp as Variable).name, null));
+
+                if (AcceptSymbol("{"))
+                {
+                    var seq = Sequence(null, "}");
+                    return new AnonymousFunction(exp.Token, paramList, seq);
+                }
+
+                var exp2 = Expression("Lambda function expression expected.");     
+
+                return new AnonymousLambdaFunction(exp.Token, paramList, exp2);
+            }
+
+            return exp;
         }
 
         Expression Expression_GroupedEquation()
@@ -528,6 +557,36 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 var startToken = token;
 
                 var exp = Expression();
+
+                // If a comma is present, it is a lambda function parameter list.
+                if (AcceptSymbol(","))
+                {
+                    if (exp is Variable == false)
+                        ThrowException("Invalid lambda parameter.");
+
+                    List<Tuple<Token, string, Expression>> paramList = new List<Tuple<Token, string, Expression>>();
+                    paramList.Add(new Tuple<Token, string, Expression>(token, (exp as Variable).name, null));
+
+                    do
+                    {
+                        var token = RequireIdentifier("Lambda parameter expected.");
+                        paramList.Add(new Tuple<Token, string, Expression>(token, token.Value, null));
+                    } while (AcceptSymbol(","));
+
+                    RequireSymbol(")", "')' required to close lambda parameter list.");
+
+                    RequireSymbol("=>", "'=>' expected for lambda function.");
+
+                    if (AcceptSymbol("{"))
+                    {
+                        var seq = Sequence(null, "}");
+                        return new AnonymousFunction(exp.Token, paramList, seq);
+                    }
+
+                    var exp2 = Expression("Lambda function expression expected.");
+
+                    return new AnonymousLambdaFunction(exp.Token, paramList, exp2);
+                }
 
                 RequireSymbol(")", "')' required to close grouped equation.");
 

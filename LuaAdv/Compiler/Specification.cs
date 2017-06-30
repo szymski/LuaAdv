@@ -42,7 +42,6 @@ namespace LuaAdv.Compiler
             { "class", "class" },
             { "partial", "partial" },
             { "public", "public" },
-            { "new", "new" },
             { "is", "is" },
             { "super", "super" }
         };

@@ -11,9 +11,9 @@ namespace LuaAdv.Compiler.Nodes
     public class GlobalVariablesDeclaration : Statement
     {
         public NamedVariable[] variables;
-        public Expression[] values;
+        public Node[] values;
 
-        public GlobalVariablesDeclaration(NamedVariable[] variables, Expression[] values)
+        public GlobalVariablesDeclaration(NamedVariable[] variables, Node[] values)
         {
             this.variables = variables;
             this.values = values;

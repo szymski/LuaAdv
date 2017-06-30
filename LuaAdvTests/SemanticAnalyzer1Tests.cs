@@ -1,5 +1,6 @@
 ﻿using System;
 using LuaAdv.Compiler.Lexer;
+using LuaAdv.Compiler.Nodes;
 using LuaAdv.Compiler.SemanticAnalyzer1;
 using LuaAdv.Compiler.SyntaxAnalyzer;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -31,6 +32,28 @@ namespace LuaAdvTests
             Assert.AreEqual("simpleFunc", funcInfo.Name);
             Assert.AreEqual("param1", funcInfo.ParameterList[0].Item1);
             Assert.AreEqual("param2", funcInfo.ParameterList[1].Item1);
+        }
+
+        [TestMethod]
+        public void test_scopes()
+        {
+            var analyzer = Analyze(@"function simpleFunc(param1, param2) {
+    function asdf.derp() { }
+    function asdf:derp() { }
+    function test1.test2:test3() { }
+}");
+            var inFuncScope = (analyzer.MainNode[0][0] as ScopeNode).scope;
+
+            Assert.AreEqual("simpleFunc", inFuncScope.FunctionName);
+
+            inFuncScope = (analyzer.MainNode[0][0][0][0][0] as ScopeNode).scope;
+            Assert.AreEqual("asdf.derp", inFuncScope.FunctionName);
+
+            inFuncScope = (analyzer.MainNode[0][0][0][0][1] as ScopeNode).scope;
+            Assert.AreEqual("asdf:derp", inFuncScope.FunctionName);
+
+            inFuncScope = (analyzer.MainNode[0][0][0][0][2] as ScopeNode).scope;
+            Assert.AreEqual("test1.test2:test3", inFuncScope.FunctionName);
         }
     }
 }

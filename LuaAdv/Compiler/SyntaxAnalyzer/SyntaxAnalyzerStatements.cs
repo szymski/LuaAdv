@@ -286,11 +286,11 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 if (identList.Count == 0)
                     ThrowException("Variable name expected.", ExceptionPosition.TokenEnd);
 
-                Expression[] expArray = { };
+                Node[] expArray = { };
 
                 if (AcceptSymbol("="))
                 {
-                    expArray = ExpressionList().ToArray();
+                    expArray = ExpressionList().Cast<Node>().ToArray();
 
                     if (expArray.Length == 0)
                         ThrowException("At least one value expected, after '='.", ExceptionPosition.TokenEnd);
@@ -315,11 +315,11 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
             if (namedVariableList?.Count != 0)
             {
-                Expression[] expArray = null;
+                Node[] expArray = null;
 
                 if (AcceptSymbol("="))
                 {
-                    expArray = ExpressionList().ToArray();
+                    expArray = ExpressionList().Cast<Node>().ToArray();
 
                     if (expArray.Length == 0)
                         ThrowException("At least one value expected, after '='.", ExceptionPosition.TokenEnd);

@@ -11,9 +11,9 @@ namespace LuaAdv.Compiler.Nodes
     public class LocalVariablesDeclaration : Statement
     {
         public Tuple<Token, string>[] variables;
-        public Expression[] values;
+        public Node[] values;
 
-        public LocalVariablesDeclaration(Tuple<Token, string>[] variables, Expression[] values)
+        public LocalVariablesDeclaration(Tuple<Token, string>[] variables, Node[] values)
         {
             this.variables = variables;
             this.values = values;

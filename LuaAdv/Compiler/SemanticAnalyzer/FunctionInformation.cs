@@ -11,6 +11,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         public int Line { get; set; }
         public int Character { get; set; }
         public string Name { get; set; }
+        public bool IsMethod { get; set; }
         /// <summary>
         /// Item 1 - parameter name
         /// Item 2 - default value

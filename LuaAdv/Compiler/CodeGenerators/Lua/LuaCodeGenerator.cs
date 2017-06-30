@@ -891,7 +891,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(AnonymousLambdaFunction node)
         {
-            // TODO: This should be lowered to AnonymousFunction
+            // This is supposed to be lowered by the semantic analyser
 
             return node;
         }

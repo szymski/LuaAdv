@@ -50,7 +50,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
                         if (expArray.Length > identList.Count)
                             ThrowException($"Too many values after variable declaration. Expected: {identList.Count}, got: {expArray.Length}.", ExceptionPosition.TokenBeginning);
-                    } 
+                    }
 
                     RequireEndToken("';' required to end the field declaration.");
 
@@ -83,6 +83,8 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             if (AcceptSymbol("=>"))
             {
                 var exp = Expression();
+                RequireSymbol(";", "';' required to close lambda function declaration.");
+                return new Tuple<string, Tuple<Token, string, Expression>[], Sequence>(name, funcParameterList.ToArray(), new Sequence(null, new Node[] { new Return(null, new[] { exp }) }));
             }
 
             var seq = Block(false);

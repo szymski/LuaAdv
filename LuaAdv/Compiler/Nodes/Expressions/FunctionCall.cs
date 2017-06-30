@@ -6,9 +6,9 @@ namespace LuaAdv.Compiler.Nodes.Expressions
     public class FunctionCall : Expression, IStatementable
     {
         public Expression function;
-        public Expression[] parameters;
+        public Node[] parameters;
 
-        public FunctionCall(Expression function, Expression[] parameters)
+        public FunctionCall(Expression function, Node[] parameters)
         {
             this.function = function;
             this.parameters = parameters;
