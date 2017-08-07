@@ -4,9 +4,9 @@ namespace LuaAdv.Compiler.Nodes.Expressions
 {
     public class GroupedEquation : Expression
     {
-        public Expression expression;
+        public Node expression;
 
-        public GroupedEquation(Token startToken, Expression expression)
+        public GroupedEquation(Token startToken, Node expression)
         {
             this.Token = startToken;
             this.expression = expression;
@@ -14,7 +14,7 @@ namespace LuaAdv.Compiler.Nodes.Expressions
 
         public override Token Token { get; }
 
-        public override string ReturnType => expression.ReturnType;
+        public override string ReturnType => "?";
 
         public override Node[] Children => new Node[] { expression };
     }

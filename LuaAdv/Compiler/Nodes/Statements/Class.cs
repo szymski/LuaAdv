@@ -12,12 +12,12 @@ namespace LuaAdv.Compiler.Nodes.Statements
         public bool local;
         public string name;
         public string baseClass;
-        public Tuple<string, Tuple<Token, string, Expression>[], Sequence>[] methods;
+        public Tuple<string, Tuple<Token, string, Expression>[], Node>[] methods;
         public Tuple<string, Expression>[] fields;
 
         public override Token Token { get; }
 
-        public Class(Token classToken, bool local, string name, string baseClass, Tuple<string, Tuple<Token, string, Expression>[], Sequence>[] methods, Tuple<string, Expression>[] fields)
+        public Class(Token classToken, bool local, string name, string baseClass, Tuple<string, Tuple<Token, string, Expression>[], Node>[] methods, Tuple<string, Expression>[] fields)
         {
             Token = classToken;
             this.local = local;

@@ -43,7 +43,9 @@ namespace LuaAdv.Compiler
             { "partial", "partial" },
             { "public", "public" },
             { "is", "is" },
-            { "super", "super" }
+            { "super", "super" },
+            { "enum", "enum" },
+            { "static", "static" },
         };
 
         public static Hashtable Symbols = new Hashtable()
@@ -55,13 +57,13 @@ namespace LuaAdv.Compiler
             { "*", "multiplier" },
             { "/", "division" },
             { "%", "modulus" },
-            { "^", "power" },
+            { "**", "power" },
             { "=", "assign" },
             { "+=", "increase" },
             { "-=", "decrease" },
             { "*=", "multiplier" },
             { "/=", "division" },
-            { "^=", "power" },
+            { "**=", "power" },
             { "%=", "power" },
             { "++", "increment" },
             { "--", "decrement" },
@@ -79,7 +81,7 @@ namespace LuaAdv.Compiler
 
 		    { "&", "and" },
             { "|", "or" },
-            { "^^", "xor" },
+            { "^", "xor" },
             { ">>", "shift right" },
             { "<<", "shift left" },
             { "~", "negate" },
@@ -110,6 +112,7 @@ namespace LuaAdv.Compiler
             { "]", "right square bracket" },
 
             // STRINGS:
+
             { "@", "multi-line string prefix" },
             { "..", "string join" },
             { "..=", "string assignment join" },
@@ -117,7 +120,7 @@ namespace LuaAdv.Compiler
 	        // MISC:
 
 		    { "=>", "lambda" },
-            { "...", "varargs" },
+            { "...", "varargs" }
         };
 
         public static Hashtable SpecialTokens = new Hashtable()
@@ -127,8 +130,10 @@ namespace LuaAdv.Compiler
             { "__FUNCTION__", "Function" },
 
             { "__DATE__", "Date" },
+            { "__LONGDATE__", "Long date" },
             { "__TIME__", "Time" },
-            { "__TIMESTAMP__", "Date and time" },
+            { "__DATETIME__", "Datetime" },
+            { "__LONGDATETIME__", "Long datetime" },
         };
 
         public static bool IsKeyword(string word) => Keywords.ContainsKey(word);

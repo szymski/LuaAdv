@@ -12,6 +12,13 @@ namespace LuaAdv.Compiler
         public int Line { get; }
         public int Character { get; }
 
+        public CompilerException(string message, Token token)
+        {
+            Message = message;
+            Line = token.Line + 1;
+            Character = token.Character + 1;
+        }
+
         public CompilerException(string message, int line, int character)
         {
             Message = message;

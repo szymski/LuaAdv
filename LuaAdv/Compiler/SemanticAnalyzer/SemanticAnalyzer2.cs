@@ -51,24 +51,31 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             node.fields = newFields.ToArray();
 
-            var newMethods = new List<Tuple<string, Tuple<Token, string, Expression>[], Sequence>>();
+            var newMethods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node>>();
             foreach (var method in node.methods)
             {
                 var newParams = new List<Tuple<Token, string, Expression>>();
                 foreach (var param in method.Item2)
                     newParams.Add(new Tuple<Token, string, Expression>(param.Item1, param.Item2, param.Item3 != null ? (Expression)param.Item3.Accept(this) : null));
 
-                newMethods.Add(new Tuple<string, Tuple<Token, string, Expression>[], Sequence>(method.Item1, newParams.ToArray(), (Sequence)method.Item3.Accept(this)));
+                var prevScope = CurrentScope;
+                var scope = new Scope(CurrentScope);
+                CurrentScope = scope;
+                CurrentScope.FunctionName = $"{node.name}:{method.Item1}";
+
+                var newMethod = method.Item3.Accept(this);
+
+                CurrentScope = prevScope;
+
+                newMethods.Add(new Tuple<string, Tuple<Token, string, Expression>[], Node>(method.Item1, newParams.ToArray(), new ScopeNode(newMethod, scope)));
+
+                // TODO: Scopes for class methods should created be here, before visiting nodes.
             }
-
-            node.methods = newMethods.ToArray();
-
-            // TODO: Lower class methods to method declarations
 
             var sequenceNodes = new List<Node>();
             sequenceNodes.Add(node);
 
-            Tuple<string, Tuple<Token, string, Expression>[], Sequence> constructorMethod = null;
+            Tuple<string, Tuple<Token, string, Expression>[], Node> constructorMethod = null;
 
             foreach (var method in newMethods)
             {
@@ -83,10 +90,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                         new Variable(node.Token, $"C{node.name}"), method.Item1, method.Item2.ToList() /* TODO: This should be an array */, method.Item3);
                 var methodNode = new ClassMethod(node, methodDeclaration);
 
-                var scope = new Scope(CurrentScope);
-                scope.FunctionName = method.Item1;
-
-                sequenceNodes.Add(new ScopeNode(methodNode, scope));
+                sequenceNodes.Add(methodNode);
             }
 
             // Construct a sequence of initializing variables
@@ -103,12 +107,12 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             {
                 if (node.baseClass != null)
                     initializerNodes.Insert(0, new StatementExpression(new SuperCall(null, new Expression[0])));
-                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Sequence>("__this", new Tuple<Token, string, Expression>[0], new Sequence(null, initializerNodes.ToArray()));
+                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Node>("__this", new Tuple<Token, string, Expression>[0], new Sequence(null, initializerNodes.ToArray())); // TODO: Create scope for implicit constructor
             }
             else
             {
-                var sequence = initializerNodes.Concat(constructorMethod.Item3.nodes);
-                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Sequence>("__this", constructorMethod.Item2, new Sequence(null, sequence.ToArray()));
+                var sequence = initializerNodes.Concat(((constructorMethod.Item3 as ScopeNode).node as Sequence).nodes);
+                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Node>("__this", constructorMethod.Item2, new Sequence(null, sequence.ToArray()));
             }
 
             var constructorDeclaration =
@@ -122,6 +126,71 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             sequenceNodes.Add(new ScopeNode(constructorNode, constructorScope));
 
             return new Sequence(null, sequenceNodes.ToArray());
+        }
+
+        public override Node Visit(SpecialNode node)
+        {
+            switch (node.value)
+            {
+                case "__LINE__":
+                    return new Number(node.Token, node.Token.Line + 1);
+                case "__FUNCTION__":
+                    return new StringType(node.Token, CurrentScope.FunctionName ?? "");
+                case "__TIME__":
+                    return new StringType(node.Token, DateTime.Now.ToString("T"));
+                case "__DATE__":
+                    return new StringType(node.Token, DateTime.Now.ToString("d"));
+                case "__LONGDATE__":
+                    return new StringType(node.Token, DateTime.Now.ToString("D"));
+                case "__DATETIME__":
+                    return new StringType(node.Token, DateTime.Now.ToString("G"));
+                case "__LONGDATETIME__":
+                    return new StringType(node.Token, DateTime.Now.ToString("R"));
+                default:
+                    throw new Exception($"'{node.value}' special token analysis not implemented.");
+            }
+        }
+
+        public override Node Visit(Variable node)
+        {
+            var enumNode = CurrentScope.LookupEnum(node.name);
+            if (enumNode != null)
+                return enumNode.value.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(SingleEnum node)
+        {
+            return new NullStatement(node.Token);
+        }
+
+        public override Node Visit(StaticIf node)
+        {
+            for (int i = 0; i < node.ifs.Count; i++)
+            {
+                var ifChild = node.ifs[i];
+
+                // Else
+                if(i == node.ifs.Count - 1 && ifChild.Item2 == null)
+                    return ifChild.Item3.Accept(this);
+
+                var condition = ifChild.Item2.Accept(this) as Expression;
+
+                bool isTrue = false;
+
+                if (condition is Bool)
+                    isTrue = ((Bool)condition).value;
+                else if (condition is Number)
+                    isTrue = ((Number)condition).value > 0;
+                else if(condition is Variable == false)
+                    throw new CompilerException("Only basic types are supported in static if statements.", ifChild.Item2.Token);
+
+                if (isTrue)
+                    return ifChild.Item3.Accept(this);
+            }
+
+            return new NullStatement(null);
         }
     }
 }

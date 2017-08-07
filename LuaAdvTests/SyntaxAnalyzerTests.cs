@@ -303,13 +303,16 @@ namespace LuaAdvTests
         [Test]
         public void test_lambda_functions()
         {
-            Lexer lexer = new Lexer("function Derp(asd) => 123");
+            Lexer lexer = new Lexer("function Derp(asd) => 123; a();");
             SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
 
             Statement node;
 
             node = analyzer.Statement();
             Assert.IsInstanceOf<StatementLambdaFunctionDeclaration>(node);
+
+            node = analyzer.Statement();
+            Assert.IsInstanceOf<StatementExpression>(node);
         }
 
         [Test]
@@ -441,6 +444,35 @@ class Test {
             Assert.IsTrue(classNode.methods.Any(f => f.Item1 == "Derp" && f.Item2.Length == 0));
 
             Assert.IsTrue(classNode.fields.Any(f => f.Item1 == "a" && f.Item2 != null && f.Item2 is Number));
+        }
+
+        [Test]
+        public void test_ignore_comments()
+        {
+            Lexer lexer = new Lexer("function " +
+                                    "/* comment */ " +
+                                    "test(" +
+                                    "/* comment2 */" +
+                                    "param1," +
+                                    "/*comment3*/" +
+                                    "param2)" +
+                                    "/*comment4*/" +
+                                    "=> /*comment5*/" +
+                                    "123;" +
+                                    "" +
+                                    " function test() {" +
+                                    "// abc\n" +
+                                    "// def\n" +
+                                    "}");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            Node node;
+
+            node = analyzer.Statement();
+            Assert.IsInstanceOf<StatementLambdaFunctionDeclaration>(node);
+
+            node = analyzer.Statement();
+            Assert.IsInstanceOf<StatementFunctionDeclaration>(node);
         }
     }
 

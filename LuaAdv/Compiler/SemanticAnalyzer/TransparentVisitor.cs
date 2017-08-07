@@ -508,7 +508,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public virtual Node Visit(GroupedEquation node)
         {
-            node.expression = (Expression)node.expression.Accept(this);
+            node.expression = node.expression.Accept(this);
 
             return node;
         }
@@ -631,18 +631,18 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         {
             var newFields = new List<Tuple<string, Expression>>();
             foreach (var field in node.fields.Where(f => f.Item2 != null))
-                newFields.Add(new Tuple<string, Expression>(field.Item1,(Expression)field.Item2.Accept(this)));
+                newFields.Add(new Tuple<string, Expression>(field.Item1, (Expression)field.Item2.Accept(this)));
 
             node.fields = newFields.ToArray();
 
-            var newMethods = new List<Tuple<string, Tuple<Token, string, Expression>[], Sequence>>();
+            var newMethods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node>>();
             foreach (var method in node.methods)
             {
                 var newParams = new List<Tuple<Token, string, Expression>>();
                 foreach (var param in method.Item2)
                     newParams.Add(new Tuple<Token, string, Expression>(param.Item1, param.Item2, param.Item3 != null ? (Expression)param.Item3.Accept(this) : null));
 
-                newMethods.Add(new Tuple<string, Tuple<Token, string, Expression>[], Sequence>(method.Item1, newParams.ToArray(), (Sequence)method.Item3.Accept(this)));
+                newMethods.Add(new Tuple<string, Tuple<Token, string, Expression>[], Node>(method.Item1, newParams.ToArray(), (Sequence)method.Item3.Accept(this)));
             }
 
             node.methods = newMethods.ToArray();
@@ -653,6 +653,29 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         public virtual Node Visit(ClassMethod node)
         {
             node.method = (StatementMethodDeclaration)node.method.Accept(this); // TODO: Possibility to replace method may be neccesary.
+
+            return node;
+        }
+
+        public virtual Node Visit(SpecialNode node)
+        {
+            return node;
+        }
+
+        public virtual Node Visit(SingleEnum node)
+        {
+            node.value = node.value.Accept(this);
+            return node;
+        }
+
+        public virtual Node Visit(StaticIf node)
+        {
+            for (int i = 0; i < node.ifs.Count; i++)
+            {
+                var ifChild = node.ifs[i];
+
+                node.ifs[i] = new Tuple<Token, Expression, Sequence>(ifChild.Item1, ifChild.Item2?.Accept(this) as Expression, (Sequence)ifChild.Item3.Accept(this));
+            }
 
             return node;
         }

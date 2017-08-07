@@ -109,8 +109,8 @@ namespace LuaAdv.Compiler.Lexer
                         if ((match = new Regex(@"\*/").Match(currentLine.Substring(character + (lines == 0 ? 1 : 0)))).Success)
                         {
                             value += currentLine.Substring(character + (lines == 0 ? 1 : 0),
-                                match.Index - character + (lines == 0 ? 2 : 0));
-                            character += (lines == 0 ? 1 : 0) + match.Index + 1;
+                                match.Index);
+                            character += (lines == 0 ? 2 : 0) + match.Index + 1;
                             break;
                         }
                         else
@@ -151,7 +151,7 @@ namespace LuaAdv.Compiler.Lexer
                             (match = new Regex(@"\*/").Match(currentLine.Substring(character + (lines == 0 ? 1 : 0)))).Success)
                         {
                             value += currentLine.Substring(character + (lines == 0 ? 1 : 0),
-                                match.Index - character + (lines == 0 ? 1 : 0));
+                                match.Index);
                             character += (lines == 0 ? 1 : 0) + match.Index + 1;
                             break;
                         }

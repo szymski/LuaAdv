@@ -2,7 +2,7 @@ Enum specification
 =====
 
 ## How it works
-Enum references are repalced to their values by the compiler.
+Enum references are replaced to their values by the compiler.
 They aren't visible in compiled Lua code.
 
 ## Construction
@@ -25,5 +25,5 @@ enum NAMED_VARIABLE {
 ```
 
 ```
-enum NAMED_VARIABLE = value;
+enum NAMED_VARIABLE = expression;
 ```

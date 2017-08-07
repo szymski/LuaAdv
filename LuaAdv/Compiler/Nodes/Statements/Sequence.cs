@@ -15,7 +15,7 @@ namespace LuaAdv.Compiler.Nodes
         public Sequence(Token startToken, Node[] nodes)
         {
             this.startToken = startToken;
-            this.nodes = nodes;
+            this.nodes = nodes.Cast<Node>().ToArray(); // TODO: Temporary fix for ArrayTypeMismatch in SemanticAnalyzer1.Visit(Sequence node)
         }
 
         public override Token Token => startToken ?? nodes[0].Token;

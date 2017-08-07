@@ -142,7 +142,7 @@ multiline */
 
 /* Another
 multi
-line
+ line
 comment */
 
 /*
@@ -179,7 +179,7 @@ line
             id++;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenComment));
-            Assert.AreEqual(lexer.Output[id].Value, " Another\nmulti\nline\ncomment ");
+            Assert.AreEqual(lexer.Output[id].Value, " Another\nmulti\n line\ncomment ");
             id++;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenComment));
@@ -196,12 +196,37 @@ line
         }
 
         [TestMethod]
+        public void test_comments_two_oneline()
+        {
+            Lexer lexer = new Lexer("/* asd */ /* asdf */\n"
+                                    + "/** doc1 */ /** doc2 */");
+
+            int id = 0;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenComment));
+            Assert.AreEqual(lexer.Output[id].Value, " asd ");
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenComment));
+            Assert.AreEqual(lexer.Output[id].Value, " asdf ");
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenDocumentationComment));
+            Assert.AreEqual(lexer.Output[id].Value, " doc1 ");
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenDocumentationComment));
+            Assert.AreEqual(lexer.Output[id].Value, " doc2 ");
+            id++;
+        }
+
+        [TestMethod]
         public void test_documentation_comments()
         {
             Lexer lexer = new Lexer(@"/// Comment /// Derp
 identifier/// Next
 
-/** Multiline in single line *//** Real
+/** Multiline in single line */ /** Real
 multiline */
 
 /** Another

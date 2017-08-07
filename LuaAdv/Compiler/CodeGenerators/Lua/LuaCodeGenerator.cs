@@ -373,6 +373,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             node.sequence.Accept(this);
 
             PopTab();
+
             builder.AppendLine();
             builder.AppendLine("end");
 
@@ -645,8 +646,43 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(Is node)
         {
-            node.expression.Accept(this);
-            // TODO: Is
+            switch (node.type)
+            {
+                case "number":
+                    builder.Append("type(");
+                    node.expression.Accept(this);
+                    builder.Append(") == \"number\"");
+                    break;
+                case "boolean":
+                    builder.Append("type(");
+                    node.expression.Accept(this);
+                    builder.Append(") == \"boolean\"");
+                    break;
+                case "string":
+                    builder.Append("type(");
+                    node.expression.Accept(this);
+                    builder.Append(") == \"string\"");
+                    break;
+                case "function":
+                    builder.Append("type(");
+                    node.expression.Accept(this);
+                    builder.Append(") == \"function\"");
+                    break;
+                case "table":
+                    builder.Append("type(");
+                    node.expression.Accept(this);
+                    builder.Append(") == \"table\"");
+                    break;
+                default: // X.__type or type(x)
+                    builder.Append("(");
+                    node.expression.Accept(this);
+                    builder.Append(").isType and (");
+                    node.expression.Accept(this);
+                    builder.Append("):isType(\"{0}\") or (type(", node.type);
+                    node.expression.Accept(this);
+                    builder.Append(") == \"{0}\")", node.type);
+                    break;
+            }
 
             return node;
         }
@@ -882,9 +918,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
             PopTab();
             builder.AppendLine();
-            builder.AppendLine("end");
-
-            return node;
+            builder.Append("end");
 
             return node;
         }
@@ -1116,6 +1150,24 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
     end
 end";
 
+        private const string ClassIsTypeFunctionBody = @"function(self, type, metatable)
+    if metatable then
+        if metatable.__type == type then
+            return true
+        elseif metatable.__baseclass then
+            return self:isType(type, metatable.__baseclass)
+        else
+            return false
+        end
+    elseif self.__type == type then
+	    return true
+	elseif getmetatable(self).__baseclass then
+		return self:isType(type, getmetatable(self).__baseclass)
+	else 
+		return false
+	end
+end";
+
         public Node Visit(Class node)
         {
             var metatableName = $"C{node.name}";
@@ -1125,8 +1177,9 @@ end";
                 builder.Append("local ");
             builder.AppendLine("{0} = {{}}", metatableName);
             builder.AppendLine("{0}.__index = {1}", metatableName, ClassIndexFunctionBody);
-            builder.AppendLine("{0}.__type = \"{0}\"", metatableName);
+            builder.AppendLine("{0}.__type = \"{1}\"", metatableName, node.name);
             builder.AppendLine("{0}.__baseclass = nil", metatableName);
+            builder.AppendLine("{0}.isType = {1}", metatableName, ClassIsTypeFunctionBody);
             builder.AppendLine();
 
             // Inheritance
@@ -1142,11 +1195,11 @@ end";
             // Constructor
             if(node.local)
                 builder.Append("local ");
-            builder.AppendLine("function {0}()", node.name);
+            builder.AppendLine("function {0}(...)", node.name);
             PushTab();
             builder.AppendLine("local tbl = { }");
             builder.AppendLine("setmetatable(tbl, {0})", metatableName);
-            builder.AppendLine("tbl:__this()");
+            builder.AppendLine("tbl:__this(...)");
             builder.AppendLine("return tbl");
             PopTab();
             builder.AppendLine("end");
@@ -1159,6 +1212,22 @@ end";
             node.method.Accept(this);
 
             return node;
+        }
+
+        public Node Visit(SpecialNode node)
+        {
+            throw new Exception("Special nodes should already have been replaced in semantic analyzer.");
+        }
+
+        public Node Visit(SingleEnum node)
+        {
+            // Enums don't exist in final code
+            return node;
+        }
+
+        public Node Visit(StaticIf node)
+        {
+            throw new Exception("Static if shouldn't exist here.");
         }
     }
 }

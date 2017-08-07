@@ -22,7 +22,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
             RequireSymbol("{", "'{' required to open class definition.");
 
-            var methods = new List<Tuple<string, Tuple<Token, string, Expression>[], Sequence>>();
+            var methods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node>>();
             var fields = new List<Tuple<string, Expression>>();
 
             while (!AcceptSymbol("}"))
@@ -67,7 +67,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             return new Class(classToken, local, name, baseClass, methods.ToArray(), fields.ToArray());
         }
 
-        public Tuple<string, Tuple<Token, string, Expression>[], Sequence> ParseClassMethod()
+        public Tuple<string, Tuple<Token, string, Expression>[], Node> ParseClassMethod()
         {
             if (!AcceptKeyword("this"))
                 RequireIdentifier("Method name expected.");
@@ -84,12 +84,12 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             {
                 var exp = Expression();
                 RequireSymbol(";", "';' required to close lambda function declaration.");
-                return new Tuple<string, Tuple<Token, string, Expression>[], Sequence>(name, funcParameterList.ToArray(), new Sequence(null, new Node[] { new Return(null, new[] { exp }) }));
+                return new Tuple<string, Tuple<Token, string, Expression>[], Node>(name, funcParameterList.ToArray(), new Sequence(null, new Node[] { new Return(null, new[] { exp }) }));
             }
 
             var seq = Block(false);
 
-            return new Tuple<string, Tuple<Token, string, Expression>[], Sequence>(name, funcParameterList.ToArray(), seq);
+            return new Tuple<string, Tuple<Token, string, Expression>[], Node>(name, funcParameterList.ToArray(), seq);
         }
     }
 }

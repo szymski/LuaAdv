@@ -66,6 +66,54 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             if (ifs.Count > 0)
                 return new If(ifs);
 
+            return Statement_Static_If();
+        }
+
+        Statement Statement_Static_If()
+        {
+            if (AcceptKeyword("static"))
+            {
+                List<Tuple<Token, Expression, Sequence>> ifs = new List<Tuple<Token, Expression, Sequence>>();
+
+                while (ifs.Count == 0 ? AcceptKeyword("if") : AcceptKeyword("if", "else"))
+                {
+                    var ifToken = token;
+
+                    if (token.Value == "if")
+                    {
+                        if (ifs.Count > 0)
+                        {
+                            PrevToken();
+                            break;
+                        }
+
+                        RequireSymbol("(");
+                        var cond = Expression();
+                        RequireSymbol(")");
+                        ifs.Add(new Tuple<Token, Expression, Sequence>(ifToken, cond, Block()));
+                    }
+                    else
+                    {
+                        if (AcceptKeyword("if"))
+                        {
+                            RequireSymbol("(");
+                            var cond = Expression();
+                            RequireSymbol(")");
+                            ifs.Add(new Tuple<Token, Expression, Sequence>(ifToken, cond, Block()));
+                            continue;
+                        }
+
+                        ifs.Add(new Tuple<Token, Expression, Sequence>(ifToken, null, Block()));
+                        break;
+                    }
+                }
+
+                if (ifs.Count == 0)
+                    ThrowException("Static if statement expected.");
+
+                return new StaticIf(ifs);
+            }
+
             return Statement_WhileLoop();
         }
 
@@ -228,7 +276,8 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 if (AcceptSymbol("=>"))
                 {
                     var exp = Expression();
-
+                    RequireEndToken("';' required to end lambda function declaration.");
+                    
                     return new StatementLambdaFunctionDeclaration(local, funcToken, name, funcParameterList, exp);
                 }
 
@@ -264,15 +313,38 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             return new StatementMethodDeclaration(funcToken, tableName, name, funcParameterList, seq);
         }
 
-        // TODO: Class
         Statement Statement_Class()
         {
             var local = AcceptKeyword("local");
 
             if (AcceptKeyword("class"))
                 return ParseClass(token, local);
-            else if(local)
+            else if (local)
                 PrevToken();
+
+            return Statement_Enum();
+        }
+
+        Statement Statement_Enum()
+        {
+            if (AcceptKeyword("enum"))
+            {
+                var enumToken = token;
+                var name = RequireIdentifier("Enum identifier expected.").Value;
+
+                if (AcceptSymbol("{")) // TODO: Multiple value enum
+                {
+                    throw new NotImplementedException();
+                }
+
+                RequireSymbol("=", "Enum value assignment expected.");
+
+                var value = Expression("Enum value expected.");
+
+                RequireEndToken("';' required to end enum declaration.");
+
+                return new SingleEnum(enumToken, name, value);
+            }
 
             return Statement_LocalVariablesDeclaration();
         }
@@ -351,7 +423,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
             if (exp != null)
             {
-                if(!(exp is IStatementable))
+                if (!(exp is IStatementable))
                     ThrowException("This operation has no effect and cannot be used as a statement.", exp.Token.Line, exp.Token.Character);
 
                 RequireEndToken("';' required to end statement.");
@@ -364,7 +436,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
         Statement Statement_Comment()
         {
-            if(AcceptToken<TokenComment>())
+            if (AcceptToken<TokenComment>())
                 return new CommentNode(token);
 
             return Statement_DocumentationComment();

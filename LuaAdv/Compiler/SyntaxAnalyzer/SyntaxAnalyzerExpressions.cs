@@ -219,7 +219,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
         {
             var exp = Expression_Unary();
 
-            if (AcceptSymbol("^^"))
+            if (AcceptSymbol("**"))
                 return new Power(exp, token, Expression_Power());
 
             return exp;
@@ -528,7 +528,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             if (AcceptSymbol("=>"))
             {
                 if (exp is GroupedEquation)
-                    exp = (exp as GroupedEquation).expression;
+                    exp = (exp as GroupedEquation).expression as Expression;
 
                 if(exp is Variable == false)
                     ThrowException("Invalid lambda parameter.");
@@ -610,6 +610,14 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 return new This(token);
             else if (AcceptSymbol("..."))
                 return new Vararg(token);
+
+            return Expression_Special();
+        }
+
+        Expression Expression_Special()
+        {
+            if(AcceptToken<TokenSpecial>(Specification.SpecialTokens.Keys.Cast<string>().ToArray()))
+                return new SpecialNode(token, token.Value);
 
             return Expression_Table();
         }

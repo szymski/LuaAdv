@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Compiler\CodeGenerators\Lua\LuaCodeGenerator.cs" />
     <Compile Include="Compiler\CodeGenerators\SourceCodeBuilder.cs" />
+    <Compile Include="Compiler\Compiler.cs" />
     <Compile Include="Compiler\Exceptions.cs" />
     <Compile Include="Compiler\IAstVisitor.cs" />
     <Compile Include="Compiler\Lexer\Lexer.cs" />
@@ -70,6 +71,7 @@
     <Compile Include="Compiler\Nodes\Expressions\Conditional\ConditionalAnd.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Conditional\ConditionalOr.cs" />
     <Compile Include="Compiler\Nodes\Expressions\NullPropagation.cs" />
+    <Compile Include="Compiler\Nodes\Expressions\SpecialNode.cs" />
     <Compile Include="Compiler\Nodes\Expressions\SuperCall.cs" />
     <Compile Include="Compiler\Nodes\Expressions\TableLength.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Ternary.cs" />
@@ -113,6 +115,8 @@
     <Compile Include="Compiler\Nodes\ScopeNode.cs" />
     <Compile Include="Compiler\Nodes\Statements\Class.cs" />
     <Compile Include="Compiler\Nodes\Statements\ClassMethod.cs" />
+    <Compile Include="Compiler\Nodes\Statements\StaticIf.cs" />
+    <Compile Include="Compiler\Nodes\Statements\SingleEnum.cs" />
     <Compile Include="Compiler\Nodes\Statements\GlobalVariablesDeclaration.cs" />
     <Compile Include="Compiler\Nodes\Statements\LocalVariablesDeclaration.cs" />
     <Compile Include="Compiler\Nodes\Statements\StatementExpression.cs" />

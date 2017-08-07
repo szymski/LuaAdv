@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,12 +28,16 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
     /// </summary>
     public class SemanticAnalyzer1 : TransparentVisitor
     {
-        public SemanticAnalyzer1(Node mainNode) : base(mainNode)
+        public SemanticAnalyzer1(Node mainNode, Scope[] toJoinScopes = null) : base(mainNode)
         {
             var scopeNode = new ScopeNode(mainNode, new Scope());
             MainNode = scopeNode;
             MainScope = scopeNode.scope;
             CurrentScope = MainScope;
+
+            if (toJoinScopes != null)
+                foreach (var scope in toJoinScopes)
+                    CurrentScope.JoinScope(scope);
         }
 
         public override Node Visit(For node)
@@ -64,7 +69,10 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         public override Node Visit(Sequence node)
         {
             for (int i = 0; i < node.nodes.Length; i++)
-                node.nodes[i] = node.nodes[i].Accept(this);
+            {
+                var newNode = node.nodes[i].Accept(this); // TODO: Throws ArrayTypeMismatch sometimes. Temporarily fixed by modifying Sequence class.
+                node.nodes[i] = newNode;
+            }
 
             return node;
         }
@@ -252,9 +260,16 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
             node.expression = (Expression)node.expression.Accept(this);
 
-            CurrentScope = scope;
+            CurrentScope = previousScope;
 
             return new ScopeNode(node, scope);
+        }
+
+        public override Node Visit(SingleEnum node)
+        {
+            node.value = node.value.Accept(this);
+            CurrentScope.AddEnum(node);
+            return node;
         }
     }
 }

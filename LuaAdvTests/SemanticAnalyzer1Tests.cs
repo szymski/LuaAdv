@@ -55,5 +55,13 @@ namespace LuaAdvTests
             inFuncScope = (analyzer.MainNode[0][0][0][0][2] as ScopeNode).scope;
             Assert.AreEqual("test1.test2:test3", inFuncScope.FunctionName);
         }
+
+        [TestMethod]
+        public void test_enum_scopes()
+        {
+            var analyzer = Analyze(@"enum test = 123;");
+
+            Assert.IsNotNull(analyzer.MainScope.LookupEnum("test"));
+        }
     }
 }

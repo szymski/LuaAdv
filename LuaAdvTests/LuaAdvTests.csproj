@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="LexerTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SemanticAnalyzer2Tests.cs" />
     <Compile Include="SyntaxAnalyzerTests.cs" />
     <Compile Include="SemanticAnalyzer1Tests.cs" />
   </ItemGroup>
