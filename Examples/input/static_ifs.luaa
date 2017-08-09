@@ -1,0 +1,9 @@
+enum myEnum = true; // Try removing or changing to false
+
+static if(myEnum) {
+    print("Hello!");
+    print("myEnum is " .. myEnum);
+}
+else {
+    print("Other code");
+}

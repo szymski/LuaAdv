@@ -1,0 +1,8 @@
+//print(__FILE__);
+print(__TIME__);
+print(__DATETIME__);
+
+function someFunction() {
+    print(__LINE__);
+    print(__FUNCTION__);
+}

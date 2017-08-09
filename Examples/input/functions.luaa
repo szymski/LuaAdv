@@ -1,0 +1,25 @@
+// Good ol' function
+function test1() {
+    print("Hello world!");
+}
+
+// Shorter syntax.
+function test2() => print("Hello world!");
+
+// Also returns the expression.
+function getSum(a, b) => a + b;
+assert(getSum(2, 3) == 5);
+
+// Lambdas - a few ways of writing them
+
+var func1 = function(a, b) {
+    return a + b;
+};
+
+var func2 = function(a, b) => a + b;
+
+var func3 = (a, b) => a + b;
+
+assert(func1(2, 3), 5);
+assert(func2(2, 3), 5);
+assert(func3(2, 3), 5);

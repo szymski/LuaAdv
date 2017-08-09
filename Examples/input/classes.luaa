@@ -1,0 +1,35 @@
+class A {
+    var definedVariable = 123;
+    var undefinedVariable; // For documentation
+
+    // Constructor
+    function this(value) {
+        print("A constructor");
+        this.undefinedVariable = value;
+    }
+
+    function getSum() => this.definedVariable + this.undefinedVariable;
+}
+
+var a = A(2); // Create a new instance
+assert(a is A);
+assert(a:getSum() == 125);
+
+class B : A {
+    function this() {
+        super(7); // Explicit constructor requires `super` keyword to call base constructor.
+        print("B constructor");
+    }
+
+    function getSum() => super() / 2;
+
+    function getFunctionName() {
+        return __FUNCTION__;
+    }
+}
+
+var b = B();
+assert(b is A);
+assert(b is B);
+assert(b:getSum() == 130 / 2);
+assert(b:getFunctionName() == "B:getFunctionName");

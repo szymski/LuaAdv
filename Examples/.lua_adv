@@ -1,0 +1,17 @@
+{
+	"comment": [
+		"--[[",
+		"	%filename%",
+		"	%date% %time%",
+		"	Compiled using LuaAdv",
+		"]]"
+	],
+
+	"include_luaa_lib" : false,
+
+	"input_dir": "./input/",
+	"output_dir": "./output/",
+	"includes": [
+		"global.luaa",
+	]
+}
