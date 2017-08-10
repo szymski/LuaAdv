@@ -20,6 +20,17 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             set { _functionName = value; }
         }
 
+        private string _rawFunctionName = null;
+
+        /// <summary>
+        /// Just the function/method name without table/metatable.
+        /// </summary>
+        public string RawFunctionName
+        {
+            get { return _rawFunctionName ?? Parent?.RawFunctionName; }
+            set { _rawFunctionName = value; }
+        }
+
         private Dictionary<string, SingleEnum> _singleEnums = new Dictionary<string, SingleEnum>();
 
         public Scope(Scope parent = null)

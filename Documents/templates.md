@@ -2,7 +2,7 @@ Template specification
 =====
 
 ## How it works
-
+NOT IMPLEMENTED YET
 
 ## Construction
 ```

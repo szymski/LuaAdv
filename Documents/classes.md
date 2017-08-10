@@ -9,12 +9,13 @@ A child-class code must be run after the parent-class's code has been evaluated 
 ## Local classes
 A local class creates its metatable and constructor as local variables.
 
-## Partial classes
+## Partial classes - NOT IMPLEMENTED YET
 A partial class can be defined in one than more files. All methods and fields will be joined together.
 
-## Special class fields
-- **__type** - Name of the class.
-- **__baseclass** - The metatable of the base class.
+## Special class fields and methods
+- **__this** - constructor function of the class.
+- **__type** - name of the class.
+- **__baseclass** - the metatable of the base class.
 - **isType** - function used by is node to determine if the class is of specified type.
 
 ## Construction

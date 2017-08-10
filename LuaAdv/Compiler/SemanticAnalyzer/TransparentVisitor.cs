@@ -629,20 +629,20 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public virtual Node Visit(Class node)
         {
-            var newFields = new List<Tuple<string, Expression>>();
-            foreach (var field in node.fields.Where(f => f.Item2 != null))
-                newFields.Add(new Tuple<string, Expression>(field.Item1, (Expression)field.Item2.Accept(this)));
+            var newFields = new List<Tuple<string, Expression, TokenDocumentationComment>>();
+            foreach (var field in node.fields)
+                newFields.Add(new Tuple<string, Expression, TokenDocumentationComment>(field.Item1, (Expression) field.Item2?.Accept(this), field.Item3));
 
             node.fields = newFields.ToArray();
 
-            var newMethods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node>>();
+            var newMethods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>>();
             foreach (var method in node.methods)
             {
                 var newParams = new List<Tuple<Token, string, Expression>>();
                 foreach (var param in method.Item2)
                     newParams.Add(new Tuple<Token, string, Expression>(param.Item1, param.Item2, param.Item3 != null ? (Expression)param.Item3.Accept(this) : null));
 
-                newMethods.Add(new Tuple<string, Tuple<Token, string, Expression>[], Node>(method.Item1, newParams.ToArray(), (Sequence)method.Item3.Accept(this)));
+                newMethods.Add(new Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>(method.Item1, newParams.ToArray(), (Sequence)method.Item3.Accept(this), method.Item4));
             }
 
             node.methods = newMethods.ToArray();

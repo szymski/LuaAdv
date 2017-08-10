@@ -40,6 +40,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Compiler\CodeGenerators\DocumentationGenerator.cs" />
+    <Compile Include="Compiler\CodeGenerators\DocumentationVisitor.cs" />
     <Compile Include="Compiler\CodeGenerators\Lua\LuaCodeGenerator.cs" />
     <Compile Include="Compiler\CodeGenerators\SourceCodeBuilder.cs" />
     <Compile Include="Compiler\Compiler.cs" />

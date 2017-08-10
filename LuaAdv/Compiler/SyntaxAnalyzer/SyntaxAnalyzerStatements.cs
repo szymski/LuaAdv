@@ -19,11 +19,27 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             var prev = endToken;
             this.endToken = endToken;
 
-            var statement = Statement_If();
+            var statement = Statement_Comment();
 
             endToken = prev;
 
             return statement;
+        }
+
+        Statement Statement_Comment()
+        {
+            if (AcceptToken<TokenComment>())
+                return new CommentNode(token);
+
+            return Statement_DocumentationComment();
+        }
+
+        Statement Statement_DocumentationComment()
+        {
+            if (AcceptToken<TokenDocumentationComment>())
+                return new DocumentationCommentNode(token);
+
+            return Statement_If();
         }
 
         Statement Statement_If()
@@ -430,22 +446,6 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
                 return new StatementExpression(exp);
             }
-
-            return Statement_Comment();
-        }
-
-        Statement Statement_Comment()
-        {
-            if (AcceptToken<TokenComment>())
-                return new CommentNode(token);
-
-            return Statement_DocumentationComment();
-        }
-
-        Statement Statement_DocumentationComment()
-        {
-            if (AcceptToken<TokenComment>())
-                return new DocumentationCommentNode(token);
 
             return Statement_Null();
         }

@@ -39,7 +39,7 @@ namespace LuaAdv.Compiler
 
     public class TokenComment : Token { }
 
-    public class TokenDocumentationComment : TokenComment { }
+    public class TokenDocumentationComment : Token { }
 
 
 }

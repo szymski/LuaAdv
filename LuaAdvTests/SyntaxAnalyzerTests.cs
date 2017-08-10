@@ -695,9 +695,9 @@ class Test {
                                     "5 * 5 " +
                                     "10 / 5 " +
                                     "12 % 2 " +
-                                    "10 ^^ 2 " +
+                                    "10 ** 2 " +
                                     "2 + 2 * 2 " +
-                                    "10 + (2 / 5) - 8 ^^ 2 " +
+                                    "10 + (2 / 5) - 8 ** 2 " +
                                     "\"something\" .. derp .. 5 + 5");
             SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
 

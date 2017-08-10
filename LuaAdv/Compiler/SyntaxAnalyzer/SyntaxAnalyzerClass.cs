@@ -22,14 +22,19 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
             RequireSymbol("{", "'{' required to open class definition.");
 
-            var methods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node>>();
-            var fields = new List<Tuple<string, Expression>>();
+            var methods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>>();
+            var fields = new List<Tuple<string, Expression, TokenDocumentationComment>>();
 
             while (!AcceptSymbol("}"))
             {
+                TokenDocumentationComment comment = null;
+
+                if (AcceptToken<TokenDocumentationComment>())
+                    comment = (TokenDocumentationComment)token;
+
                 if (AcceptKeyword("function"))
                 {
-                    var func = ParseClassMethod();
+                    var func = ParseClassMethod(comment);
                     methods.Add(func);
                 }
                 else if (AcceptKeyword("var"))
@@ -57,7 +62,8 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                     for (var i = 0; i < identList.Count; i++)
                     {
                         var ident = identList[i];
-                        fields.Add(new Tuple<string, Expression>(ident.Item2, expArray.Length >= i + 1 ? expArray[i] : null));
+                        fields.Add(new Tuple<string, Expression, TokenDocumentationComment>(ident.Item2, expArray.Length >= i + 1 ? expArray[i] : null, comment));
+                        comment = null;
                     }
                 }
                 else
@@ -67,7 +73,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             return new Class(classToken, local, name, baseClass, methods.ToArray(), fields.ToArray());
         }
 
-        public Tuple<string, Tuple<Token, string, Expression>[], Node> ParseClassMethod()
+        public Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment> ParseClassMethod(TokenDocumentationComment comment)
         {
             if (!AcceptKeyword("this"))
                 RequireIdentifier("Method name expected.");
@@ -84,12 +90,12 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             {
                 var exp = Expression();
                 RequireSymbol(";", "';' required to close lambda function declaration.");
-                return new Tuple<string, Tuple<Token, string, Expression>[], Node>(name, funcParameterList.ToArray(), new Sequence(null, new Node[] { new Return(null, new[] { exp }) }));
+                return new Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>(name, funcParameterList.ToArray(), new Sequence(null, new Node[] { new Return(null, new[] { exp }) }), comment);
             }
 
             var seq = Block(false);
 
-            return new Tuple<string, Tuple<Token, string, Expression>[], Node>(name, funcParameterList.ToArray(), seq);
+            return new Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>(name, funcParameterList.ToArray(), seq, comment);
         }
     }
 }

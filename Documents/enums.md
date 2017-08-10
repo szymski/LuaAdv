@@ -7,6 +7,7 @@ They aren't visible in compiled Lua code.
 
 ## Construction
 
+NOT IMPLEMENTED YET
 ```
 enum NAMED_VARIABLE {
     NAME = value,
@@ -15,6 +16,7 @@ enum NAMED_VARIABLE {
 }
 ```
 
+NOT IMPLEMENTED YET
 ```
 // Index starts at 0 and increments
 enum NAMED_VARIABLE {

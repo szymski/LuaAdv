@@ -49,10 +49,12 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
         bool AcceptToken<T>(string value)
         {
+            int lastIndex = tokenIndex;
             SkipComments(typeof(T) == typeof(TokenComment), typeof(T) == typeof(TokenDocumentationComment));
 
             if (tokenIndex + 1 >= tokens.Count || !(tokens[tokenIndex + 1] is T) || tokens[tokenIndex + 1].Value != value)
             {
+                tokenIndex = lastIndex;
                 return false;
             }
 
@@ -63,10 +65,12 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
         bool AcceptToken<T>()
         {
+            int lastIndex = tokenIndex;
             SkipComments(typeof(T) == typeof(TokenComment), typeof(T) == typeof(TokenDocumentationComment));
 
             if (tokenIndex + 1 >= tokens.Count || !(tokens[tokenIndex + 1] is T))
             {
+                tokenIndex = lastIndex;
                 return false;
             }
 
@@ -87,6 +91,8 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
         {
             bool comment = false;
 
+            int lastIndex = tokenIndex;
+
             do
             {
                 comment = tokenIndex + 2 < tokens.Count && ((!expectsComment && tokens[tokenIndex + 1] is TokenComment) ||
@@ -95,6 +101,9 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 if (comment)
                     tokenIndex++;
             } while (comment);
+
+            if (expectsComment || expectsDocComment)
+                tokenIndex = lastIndex;
         }
 
         bool AcceptKeyword(params string[] values)

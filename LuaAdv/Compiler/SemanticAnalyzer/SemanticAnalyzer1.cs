@@ -103,6 +103,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             var previousScope = CurrentScope;
             CurrentScope = scope;
 
+            CurrentScope.RawFunctionName = NamedVariablesToRawStringName(node.name);
             CurrentScope.FunctionName = NamedVariablesToStringName(node.name);
 
             for (int i = 0; i < node.parameterList.Count; i++)
@@ -139,12 +140,22 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
                 return "INVALID";
         }
 
+        // TODO: Move somewhere else.
+        private string NamedVariablesToRawStringName(Expression node)
+        {
+            if (node is Variable)
+                return (node as Variable).name;
+            else
+                return "INVALID";
+        }
+
         public override Node Visit(StatementLambdaFunctionDeclaration node)
         {
             var scope = new Scope(CurrentScope);
             var previousScope = CurrentScope;
             CurrentScope = scope;
 
+            CurrentScope.RawFunctionName = NamedVariablesToRawStringName(node.name);
             CurrentScope.FunctionName = NamedVariablesToStringName(node.name);
 
             for (int i = 0; i < node.parameterList.Count; i++)
@@ -176,6 +187,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             var previousScope = CurrentScope;
             CurrentScope = scope;
 
+            CurrentScope.RawFunctionName = node.name;
             CurrentScope.FunctionName = $"{NamedVariablesToStringName(node.tableName)}:{node.name}";
 
             for (int i = 0; i < node.parameterList.Count; i++)
@@ -207,6 +219,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             var previousScope = CurrentScope;
             CurrentScope = scope;
 
+            CurrentScope.RawFunctionName = node.name;
             CurrentScope.FunctionName = $"{NamedVariablesToStringName(node.tableName)}:{node.name}";
 
             for (int i = 0; i < node.parameterList.Count; i++)

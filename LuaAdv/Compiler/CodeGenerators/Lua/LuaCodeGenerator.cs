@@ -578,7 +578,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(Number node)
         {
-            builder.Append(node.value.ToString());
+            builder.Append(node.value.ToString().Replace(',', '.'));
 
             return node;
         }
@@ -978,10 +978,10 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
         public Node Visit(SuperCall node)
         {
             // TODO: This should be moved to the semantic analyzer.
-            if(CurrentScope.FunctionName == null)
+            if(CurrentScope.RawFunctionName == null)
                 throw new CompilerException("Super-method cannot be called in an no-name function.", node.Token.Line, node.Token.Character);
 
-            builder.Append("getmetatable(self).__baseclass.{0}(self", CurrentScope.FunctionName);
+            builder.Append("getmetatable(self).__baseclass.{0}(self", CurrentScope.RawFunctionName);
 
             if (node.parameters.Length > 0)
                 builder.Append(", ");

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using LuaAdv.Compiler;
+using LuaAdv.Compiler.CodeGenerators;
 using Newtonsoft.Json.Linq;
 
 namespace LuaAdvWatcher
@@ -21,6 +22,7 @@ namespace LuaAdvWatcher
         private string _comment = "";
         private string _inputDirectory = "";
         private string _outputDirectory = "";
+        private string _docsDirectory = "";
         private string[] _toIncludeFiles = new string[0];
 
         private Compiler _compiler = new Compiler();
@@ -47,6 +49,7 @@ namespace LuaAdvWatcher
             var context = new ContextMenu();
 
             context.MenuItems.Add("Compile all", (o, args) => CompileAll());
+            context.MenuItems.Add("Generate documentation", (o, args) => GenerateDocumentation());
             context.MenuItems.Add("Exit", (o, args) => Close());
 
             trayIcon.ContextMenu = context;
@@ -87,6 +90,7 @@ namespace LuaAdvWatcher
 
             _inputDirectory = obj["input_dir"]?.Value<string>() ?? configFileDirectory;
             _outputDirectory = obj["output_dir"]?.Value<string>() ?? configFileDirectory;
+            _docsDirectory = obj["docs_dir"]?.Value<string>() ?? configFileDirectory + "/docs/";
             _comment = "";
             if (obj["comment"] != null)
                 foreach (var line in obj["comment"].Values())
@@ -97,9 +101,10 @@ namespace LuaAdvWatcher
 
             _inputDirectory = Path.GetFullPath(_inputDirectory);
             _outputDirectory = Path.GetFullPath(_outputDirectory);
+            _docsDirectory = Path.GetFullPath(_docsDirectory);
         }
 
-        private bool CompileAll(string dir = null)
+        private bool CompileAll(string dir = null, int level = 0)
         {
             if (dir == null)
                 dir = _inputDirectory;
@@ -111,7 +116,59 @@ namespace LuaAdvWatcher
 
             // Do the same for all folders recursively
             foreach (var d in new DirectoryInfo(dir).EnumerateDirectories())
-                if (!CompileAll(d.FullName))
+                if (!CompileAll(d.FullName, level++))
+                    return false;
+
+            if (level == 0)
+            {
+                trayIcon.ShowBalloonTip(8000, "LuaAdv", "Successfully compiled all files!", ToolTipIcon.Info);
+            }
+
+            return true;
+        }
+
+        private void GenerateDocumentation()
+        {
+            try
+            {
+                DocumentationGenerator docGen = new DocumentationGenerator();
+                AddDocumentationFiles(docGen);
+                var result = docGen.Generate(_docsDirectory);
+
+                if (!Directory.Exists(_docsDirectory))
+                    Directory.CreateDirectory(_docsDirectory);
+
+                foreach (var file in result)
+                {
+                    string outputDir = _docsDirectory + "/" + file.Key;
+
+                    WriteToFile(outputDir, file.Value);
+                }
+
+                trayIcon.ShowBalloonTip(8000, "LuaAdv", "Documentation successfully generated!", ToolTipIcon.Info);
+            }
+            catch (Exception e)
+            {
+                trayIcon.ShowBalloonTip(8000, "LuaAdv", "An error occured while generating the documentation!", ToolTipIcon.Error);
+                throw e;
+            }
+        }
+
+        private bool AddDocumentationFiles(DocumentationGenerator docGen, string dir = null, int level = 0)
+        {
+            if (dir == null)
+                dir = _inputDirectory;
+
+            foreach (var file in new DirectoryInfo(dir).EnumerateFiles()
+                .Where(f => f.Extension == ".luaa"))
+            {
+                string relativeFilename = file.FullName.Replace(_inputDirectory, "");
+                docGen.AddFile(relativeFilename, File.ReadAllText(file.FullName));
+            }
+
+            // Do the same for all folders recursively
+            foreach (var d in new DirectoryInfo(dir).EnumerateDirectories())
+                if (!AddDocumentationFiles(docGen, d.FullName, level++))
                     return false;
 
             return true;
@@ -119,7 +176,7 @@ namespace LuaAdvWatcher
 
         private bool ProcessFile(FileInfo file)
         {
-            var outputFilename = _outputDirectory + "\\" + file.FullName.Replace(Directory.GetCurrentDirectory(), "")
+            var outputFilename = _outputDirectory + "\\" + file.FullName.Replace(_inputDirectory, "")
                 .Replace(".luaa", ".lua");
 
             string contents = null;
@@ -181,7 +238,7 @@ namespace LuaAdvWatcher
             {
                 try
                 {
-                    _compiler.AddInclude(filename, File.ReadAllText(filename), true, File.GetLastWriteTime(filename));
+                    _compiler.AddInclude(filename, File.ReadAllText(Path.Combine(_inputDirectory, filename)), true, File.GetLastWriteTime(filename));
                 }
                 catch (CompilerException e)
                 {

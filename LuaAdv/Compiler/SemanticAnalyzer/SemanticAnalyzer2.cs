@@ -45,13 +45,13 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
         public override Node Visit(Class node)
         {
-            var newFields = new List<Tuple<string, Expression>>();
-            foreach (var field in node.fields.Where(f => f.Item2 != null))
-                newFields.Add(new Tuple<string, Expression>(field.Item1, (Expression)field.Item2.Accept(this)));
+            var newFields = new List<Tuple<string, Expression, TokenDocumentationComment>>();
+            foreach (var field in node.fields)
+                newFields.Add(new Tuple<string, Expression, TokenDocumentationComment>(field.Item1, (Expression)field.Item2?.Accept(this), field.Item3));
 
             node.fields = newFields.ToArray();
 
-            var newMethods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node>>();
+            var newMethods = new List<Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>>();
             foreach (var method in node.methods)
             {
                 var newParams = new List<Tuple<Token, string, Expression>>();
@@ -61,13 +61,14 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                 var prevScope = CurrentScope;
                 var scope = new Scope(CurrentScope);
                 CurrentScope = scope;
+                CurrentScope.RawFunctionName = method.Item1;
                 CurrentScope.FunctionName = $"{node.name}:{method.Item1}";
 
                 var newMethod = method.Item3.Accept(this);
 
                 CurrentScope = prevScope;
 
-                newMethods.Add(new Tuple<string, Tuple<Token, string, Expression>[], Node>(method.Item1, newParams.ToArray(), new ScopeNode(newMethod, scope)));
+                newMethods.Add(new Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>(method.Item1, newParams.ToArray(), new ScopeNode(newMethod, scope), method.Item4));
 
                 // TODO: Scopes for class methods should created be here, before visiting nodes.
             }
@@ -75,7 +76,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             var sequenceNodes = new List<Node>();
             sequenceNodes.Add(node);
 
-            Tuple<string, Tuple<Token, string, Expression>[], Node> constructorMethod = null;
+            Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment> constructorMethod = null;
 
             foreach (var method in newMethods)
             {
@@ -97,7 +98,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             List<Node> initializerNodes = new List<Node>();
 
-            foreach (var field in node.fields)
+            foreach (var field in node.fields.Where(f => f.Item2 != null))
             {
                 var initializerNode = new StatementExpression(new ValueAssignmentOperator(new TableDotIndex(new This(null), null, field.Item1), null, field.Item2)); // TODO: Null tokens could be replaced with a special class.
                 initializerNodes.Add(initializerNode);
@@ -107,12 +108,12 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             {
                 if (node.baseClass != null)
                     initializerNodes.Insert(0, new StatementExpression(new SuperCall(null, new Expression[0])));
-                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Node>("__this", new Tuple<Token, string, Expression>[0], new Sequence(null, initializerNodes.ToArray())); // TODO: Create scope for implicit constructor
+                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>("__this", new Tuple<Token, string, Expression>[0], new Sequence(null, initializerNodes.ToArray()), null); // TODO: Create scope for implicit constructor
             }
             else
             {
                 var sequence = initializerNodes.Concat(((constructorMethod.Item3 as ScopeNode).node as Sequence).nodes);
-                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Node>("__this", constructorMethod.Item2, new Sequence(null, sequence.ToArray()));
+                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>("__this", constructorMethod.Item2, new Sequence(null, sequence.ToArray()), constructorMethod.Item4);
             }
 
             var constructorDeclaration =
@@ -121,6 +122,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             var constructorNode = new ClassMethod(node, constructorDeclaration);
 
             var constructorScope = new Scope(CurrentScope);
+            constructorScope.RawFunctionName = constructorMethod.Item1;
             constructorScope.FunctionName = constructorMethod.Item1;
 
             sequenceNodes.Add(new ScopeNode(constructorNode, constructorScope));
