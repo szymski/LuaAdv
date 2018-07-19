@@ -46,6 +46,7 @@
     <Compile Include="Compiler\CodeGenerators\SourceCodeBuilder.cs" />
     <Compile Include="Compiler\Compiler.cs" />
     <Compile Include="Compiler\Exceptions.cs" />
+    <Compile Include="Compiler\Extensions\CodeObfuscator.cs" />
     <Compile Include="Compiler\IAstVisitor.cs" />
     <Compile Include="Compiler\Lexer\Lexer.cs" />
     <Compile Include="Compiler\Lexer\LexerUtils.cs" />

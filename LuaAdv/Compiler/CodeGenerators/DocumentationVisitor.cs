@@ -63,7 +63,7 @@ namespace LuaAdv.Compiler.CodeGenerators
 
     public class DocumentationVisitor : TransparentVisitor
     {
-        private DocumentationCommentNode _lastCommentNode;
+        private TokenDocumentationComment _lastComment;
 
         public List<DocumentationFunction> Functions { get; } = new List<DocumentationFunction>();
         public List<DocumentationClass> Classes { get; } = new List<DocumentationClass>();
@@ -75,7 +75,14 @@ namespace LuaAdv.Compiler.CodeGenerators
 
         public override Node Visit(DocumentationCommentNode node)
         {
-            _lastCommentNode = node;
+            if (_lastComment == null)
+                _lastComment = new TokenDocumentationComment()
+                {
+                    Value = node.Token.Value,
+                };
+            else
+                _lastComment.Value += "\n" + node.Token.Value;
+
             return base.Visit(node);
         }
 
@@ -91,11 +98,11 @@ namespace LuaAdv.Compiler.CodeGenerators
                     Name = p.Item2,
                     DefaultValue = p.Item3,
                 }).ToArray(),
-                Comment = _lastCommentNode != null ? _lastCommentNode.Token.Value : "No description",
+                Comment = _lastComment != null ? _lastComment.Value : "No description",
                 Local = node.local,
             });
 
-            _lastCommentNode = null;
+            _lastComment = null;
 
             return base.Visit(node);
         }
@@ -106,7 +113,7 @@ namespace LuaAdv.Compiler.CodeGenerators
             {
                 Name = node.name,
                 BaseClass = node.baseClass,
-                Comment = _lastCommentNode != null ? _lastCommentNode.Token.Value : "No description",
+                Comment = _lastComment != null ? _lastComment.Value : "No description",
                 Methods = node.methods.Select(m => new DocumentationClassMethod()
                 {
                     Name = m.Item1,
@@ -129,7 +136,7 @@ namespace LuaAdv.Compiler.CodeGenerators
 
             Classes.Add(docClass);
 
-            _lastCommentNode = null;
+            _lastComment = null;
 
             return base.Visit(node);
         }

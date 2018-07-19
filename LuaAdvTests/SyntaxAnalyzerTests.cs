@@ -799,6 +799,31 @@ class Test {
 
             exp = analyzer.Expression();
             Assert.IsInstanceOf<AnonymousLambdaFunction>(exp);
+
+
+            lexer = new Lexer("() => { }");
+            analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<AnonymousFunction>(exp);
+
+            lexer = new Lexer("(a, b) => { }");
+            analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<AnonymousFunction>(exp);
+
+            lexer = new Lexer("() => 5");
+            analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<AnonymousLambdaFunction>(exp);
+
+            lexer = new Lexer("(a, b) => 5");
+            analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<AnonymousLambdaFunction>(exp);
         }
 
         [Test]

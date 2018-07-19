@@ -90,34 +90,41 @@ namespace LuaAdv.Compiler.CodeGenerators
 
             #region Classes
 
-            b.AppendFormat("<h2 class='section'>Classes</h2>");
+            if (file.Classes.Length > 0)
+                b.AppendFormat("<h2 class='section'>Classes</h2>");
 
             foreach (var docClass in file.Classes)
             {
                 b.AppendLine("<div class='class'>");
                 b.AppendFormat("<h3 class='class_name'><span class='function_keyword'>class</span> ");
                 b.AppendFormat("{0}", docClass.Name);
-                if(docClass.BaseClass != null)
+                if (docClass.BaseClass != null)
                     b.AppendFormat(" : {0}", docClass.BaseClass);
                 b.AppendLine("</h3>");
 
                 b.AppendLine("<div class='function_description_box'>");
                 b.Append("<p>");
-                b.Append(docClass.Comment);
+                b.Append(ProcessComment(docClass.Comment, new string[0]));
                 b.Append("</p>");
                 b.AppendLine("</div>");
 
-                b.AppendFormat("<h3 class='class_section'>Fields</h3>");
-                b.AppendLine("<div class='class_fields'>");
-                foreach (var field in docClass.Fields)
-                    GenerateClassField(b, field);
-                b.AppendLine("</div>");
+                if (docClass.Fields.Length > 0)
+                {
+                    b.AppendFormat("<h3 class='class_section'>Fields</h3>");
+                    b.AppendLine("<div class='class_fields'>");
+                    foreach (var field in docClass.Fields)
+                        GenerateClassField(b, field);
+                    b.AppendLine("</div>");
+                }
 
-                b.AppendFormat("<h3 class='class_section'>Methods</h3>");
-                b.AppendLine("<div class='class_methods'>");
-                foreach (var method in docClass.Methods)
-                    GenerateClassMethod(b, method);
-                b.AppendLine("</div>");
+                if (docClass.Methods.Length > 0)
+                {
+                    b.AppendFormat("<h3 class='class_section'>Methods</h3>");
+                    b.AppendLine("<div class='class_methods'>");
+                    foreach (var method in docClass.Methods)
+                        GenerateClassMethod(b, method);
+                    b.AppendLine("</div>");
+                }
 
                 b.AppendLine("</div>");
             }
@@ -126,13 +133,15 @@ namespace LuaAdv.Compiler.CodeGenerators
 
             #region Global variables
 
-            b.AppendFormat("<h2 class='section'>Fields</h2>");
+            //b.AppendFormat("<h2 class='section'>Variables</h2>");
 
             #endregion
 
             #region Global Functions
 
-            b.AppendFormat("<h2 class='section'>Functions</h2>");
+            if (file.Functions.Count(f => !f.Local) > 0)
+                b.AppendFormat("<h2 class='section'>Functions</h2>");
+
             foreach (var func in file.Functions.Where(f => !f.Local))
                 GenerateFunction(b, func);
 
@@ -140,7 +149,9 @@ namespace LuaAdv.Compiler.CodeGenerators
 
             #region Local Functions
 
-            b.AppendFormat("<h2 class='section'>Local functions</h2>");
+            if (file.Functions.Count(f => f.Local) > 0)
+                b.AppendFormat("<h2 class='section'>Local functions</h2>");
+
             foreach (var func in file.Functions.Where(f => f.Local))
                 GenerateFunction(b, func);
 
@@ -163,7 +174,7 @@ namespace LuaAdv.Compiler.CodeGenerators
 
         private void GenerateMenu(StringBuilder b, string currentFilePath)
         {
-            
+
         }
 
         private void GenerateFunction(StringBuilder b, DocumentationFunction func)
@@ -190,7 +201,7 @@ namespace LuaAdv.Compiler.CodeGenerators
             b.AppendLine("</h3>");
             b.AppendLine("<div class='function_description_box'>");
             b.Append("<p>");
-            b.Append(func.Comment);
+            b.Append(ProcessComment(func.Comment, func.Parameters.Select(p => p.Name).ToArray()));
             b.Append("</p>");
             b.AppendLine("</div>");
 
@@ -219,7 +230,7 @@ namespace LuaAdv.Compiler.CodeGenerators
             b.AppendLine("</h3>");
             b.AppendLine("<div class='function_description_box'>");
             b.Append("<p>");
-            b.Append(method.Comment);
+            b.Append(ProcessComment(method.Comment, method.Parameters.Select(p => p.Name).ToArray()));
             b.Append("</p>");
             b.AppendLine("</div>");
 
@@ -233,9 +244,55 @@ namespace LuaAdv.Compiler.CodeGenerators
             if (field.DefaultValue != null)
                 b.AppendFormat(" = {0}", field.DefaultValue.Token.Value);
             b.Append("</span>");
-            b.AppendFormat(" - {0}", field.Comment);
+            b.AppendFormat(" - {0}", ProcessComment(field.Comment, new string[0]));
             b.AppendLine();
             b.AppendLine("</p>");
+        }
+
+        private string ProcessComment(string comment, string[] paramNames)
+        {
+            var lines = comment.Replace("\r\n", "\n").Split('\n').Select(l => l.Trim()).ToArray();
+            var output = "";
+
+            var funcParams = new List<string>();
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var line = lines[i];
+
+                if(line.Length == 0)
+                    continue;
+
+                if (line.StartsWith("@param"))
+                {
+                    funcParams.Add(line.Substring("@param".Length));
+                    continue;   
+                }
+
+                output += line;
+
+                if (i != line.Length - 1)
+                    output += "<br/>\n";
+            }
+
+            if (funcParams.Count > 0)
+            {
+                output += "<b>Parameters: </b>";
+
+                var i = 0;
+                foreach (var param in funcParams)
+                {
+                    var paramName = "INVALID";
+
+                    if (i < paramNames.Length)
+                        paramName = paramNames[i];
+
+                    output += $"<p><b>{paramName}</b> - {param}</p>";
+                    i++;
+                }
+            }
+
+            return output;
         }
     }
 }

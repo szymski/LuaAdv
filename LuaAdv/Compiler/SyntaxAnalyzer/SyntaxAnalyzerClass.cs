@@ -29,8 +29,14 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             {
                 TokenDocumentationComment comment = null;
 
-                if (AcceptToken<TokenDocumentationComment>())
-                    comment = (TokenDocumentationComment)token;
+                while (AcceptToken<TokenDocumentationComment>())
+                    if (comment == null)
+                        comment = new TokenDocumentationComment()
+                        {
+                            Value = token.Value,
+                        };
+                    else
+                        comment.Value += "\n" + token.Value;
 
                 if (AcceptKeyword("function"))
                 {

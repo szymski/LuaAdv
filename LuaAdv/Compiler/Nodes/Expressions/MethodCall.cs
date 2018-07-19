@@ -5,12 +5,12 @@ namespace LuaAdv.Compiler.Nodes.Expressions
 {
     public class MethodCall : NamedVariable, IStatementable // TODO: This isn't a named variable, rewrite.
     {
-        public Expression methodTable;
+        public Node methodTable;
         public Token nameToken;
         public string name;
-        public Expression[] parameters;
+        public Node[] parameters;
 
-        public MethodCall(Expression method, Token nameToken, string name, Expression[] parameters)
+        public MethodCall(Node method, Token nameToken, string name, Node[] parameters)
         {
             this.methodTable = method;
             this.nameToken = nameToken;

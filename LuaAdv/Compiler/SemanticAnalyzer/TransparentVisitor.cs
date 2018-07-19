@@ -51,11 +51,6 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             return node;
         }
 
-        public ScopeNode PushScope(Node innerNode)
-        {
-            return new ScopeNode(innerNode, new Scope(CurrentScope));
-        }
-
         #endregion
 
         public virtual Node Visit(For node)
@@ -515,10 +510,10 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
         public virtual Node Visit(MethodCall node)
         {
-            node.methodTable = (Expression)node.methodTable.Accept(this);
+            node.methodTable = node.methodTable.Accept(this);
 
             for (var i = 0; i < node.parameters.Length; i++)
-                node.parameters[i] = (Expression)node.parameters[i].Accept(this);
+                node.parameters[i] = node.parameters[i].Accept(this);
 
             return node;
         }

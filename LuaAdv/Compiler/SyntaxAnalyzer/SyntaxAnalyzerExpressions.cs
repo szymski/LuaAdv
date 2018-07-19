@@ -470,7 +470,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
             RequireSymbol(")", "')' required to close method call.");
 
-            return new MethodCall(exp, nameToken, nameToken.Value, parameters.ToArray());
+            return new MethodCall(exp, nameToken, nameToken.Value, parameters.Cast<Node>().ToArray());
         }
 
         /// <summary>
@@ -523,29 +523,58 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
         Expression Expression_QuickAnonymousFunction()
         {
-            var exp = Expression_GroupedEquation();
+            Token token = null;
+            bool empty = false;
+
+            if (AcceptSymbol("("))
+            {
+                token = this.token;
+
+                if (AcceptSymbol(")"))
+                    empty = true;
+                else
+                    PrevToken();
+            }
+
+            Expression exp = null;
+            if (!empty)
+            {
+                exp = Expression_GroupedEquation();
+                if (exp == null)
+                    return exp;
+
+                token = exp.Token;
+            }
 
             if (AcceptSymbol("=>"))
             {
-                if (exp is GroupedEquation)
-                    exp = (exp as GroupedEquation).expression as Expression;
 
-                if(exp is Variable == false)
-                    ThrowException("Invalid lambda parameter.");
+                if (!empty)
+                {
+                    if (exp is GroupedEquation)
+                        exp = (exp as GroupedEquation).expression as Expression;
+
+                    if (exp is Variable == false)
+                        ThrowException("Invalid lambda parameter.");
+                }
 
                 var paramList = new List<Tuple<Token, string, Expression>>();
-                paramList.Add(new Tuple<Token, string, Expression>(exp.Token, (exp as Variable).name, null));
+                if (!empty)
+                    paramList.Add(new Tuple<Token, string, Expression>(exp.Token, (exp as Variable).name, null));
 
                 if (AcceptSymbol("{"))
                 {
                     var seq = Sequence(null, "}");
-                    return new AnonymousFunction(exp.Token, paramList, seq);
+                    return new AnonymousFunction(token, paramList, seq);
                 }
 
-                var exp2 = Expression("Lambda function expression expected.");     
+                var exp2 = Expression("Lambda function expression expected.");
 
-                return new AnonymousLambdaFunction(exp.Token, paramList, exp2);
+                return new AnonymousLambdaFunction(token, paramList, exp2);
             }
+
+            if (empty)
+                ThrowException("Lambda operator '=>' expected.", ExceptionPosition.TokenEnd);
 
             return exp;
         }
@@ -616,7 +645,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
         Expression Expression_Special()
         {
-            if(AcceptToken<TokenSpecial>(Specification.SpecialTokens.Keys.Cast<string>().ToArray()))
+            if (AcceptToken<TokenSpecial>(Specification.SpecialTokens.Keys.Cast<string>().ToArray()))
                 return new SpecialNode(token, token.Value);
 
             return Expression_Table();
