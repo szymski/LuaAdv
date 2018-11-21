@@ -1,0 +1,15 @@
+enum a = 123;
+enum b = "test";
+
+enum MyEnum {
+    Key1 = "This is first key",
+    Key2 = "Second",
+    Key3 = 3,
+};
+
+print(a);
+print(b);
+
+print(MyEnum.Key1);
+print(MyEnum.Key2);
+print(MyEnum.Key3);

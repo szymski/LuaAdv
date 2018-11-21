@@ -129,6 +129,7 @@ namespace LuaAdv.Compiler
         Node Visit(DocumentationCommentNode node);
         Node Visit(SpecialNode node);
         Node Visit(SingleEnum node);
+        Node Visit(MultiEnum node);
 
         Node Visit(StaticIf node);
     }

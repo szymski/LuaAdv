@@ -59,9 +59,10 @@ namespace LuaAdvTests
         [TestMethod]
         public void test_enum_scopes()
         {
-            var analyzer = Analyze(@"enum test = 123;");
+            var analyzer = Analyze(@"enum test = 123; enum test2 { a, b, c };");
 
-            Assert.IsNotNull(analyzer.MainScope.LookupEnum("test"));
+            Assert.IsNotNull(analyzer.MainScope.LookupSingleEnum("test"));
+            Assert.IsNotNull(analyzer.MainScope.LookupMultiEnum("test2"));
         }
     }
 }

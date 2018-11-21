@@ -474,6 +474,88 @@ class Test {
             node = analyzer.Statement();
             Assert.IsInstanceOf<StatementFunctionDeclaration>(node);
         }
+
+        [Test]
+        public void test_single_enum()
+        {
+            Lexer lexer = new Lexer("enum test = 123;");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var node = analyzer.Statement();
+
+            Assert.IsInstanceOf<SingleEnum>(node);
+
+            var _enum = (SingleEnum)node;
+
+            Assert.AreEqual("test", _enum.name);
+            Assert.IsInstanceOf<Number>(_enum.value);
+        }
+
+        [Test]
+        public void test_multi_enum_1()
+        {
+            Lexer lexer = new Lexer("enum test { name1, name2, name3 };");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var node = analyzer.Statement();
+
+            Assert.IsInstanceOf<MultiEnum>(node);
+
+            var _enum = (MultiEnum) node;
+
+            Assert.AreEqual("name1", _enum.values[0].Item1);
+            Assert.AreEqual(0, ((Number)_enum.values[0].Item2).value);
+
+            Assert.AreEqual("name2", _enum.values[1].Item1);
+            Assert.AreEqual(1, ((Number)_enum.values[1].Item2).value);
+
+            Assert.AreEqual("name3", _enum.values[2].Item1);
+            Assert.AreEqual(2, ((Number)_enum.values[2].Item2).value);
+        }
+
+        [Test]
+        public void test_multi_enum_2()
+        {
+            Lexer lexer = new Lexer("enum test { name1, name2, name3, };");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var node = analyzer.Statement();
+
+            Assert.IsInstanceOf<MultiEnum>(node);
+
+            var _enum = (MultiEnum)node;
+
+            Assert.AreEqual("name1", _enum.values[0].Item1);
+            Assert.AreEqual(0, ((Number)_enum.values[0].Item2).value);
+
+            Assert.AreEqual("name2", _enum.values[1].Item1);
+            Assert.AreEqual(1, ((Number)_enum.values[1].Item2).value);
+
+            Assert.AreEqual("name3", _enum.values[2].Item1);
+            Assert.AreEqual(2, ((Number)_enum.values[2].Item2).value);
+        }
+
+        [Test]
+        public void test_multi_enum_3()
+        {
+            Lexer lexer = new Lexer("enum test { name1 = \"test\", name2 = 123, name3, };");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var node = analyzer.Statement();
+
+            Assert.IsInstanceOf<MultiEnum>(node);
+
+            var _enum = (MultiEnum)node;
+
+            Assert.AreEqual("name1", _enum.values[0].Item1);
+            Assert.AreEqual("test", ((StringType)_enum.values[0].Item2).value);
+
+            Assert.AreEqual("name2", _enum.values[1].Item1);
+            Assert.AreEqual(123, ((Number)_enum.values[1].Item2).value);
+
+            Assert.AreEqual("name3", _enum.values[2].Item1);
+            Assert.AreEqual(2, ((Number)_enum.values[2].Item2).value);
+        }
     }
 
     [TestFixture]

@@ -1224,6 +1224,11 @@ end";
             // Enums don't exist in final code
             return node;
         }
+        public Node Visit(MultiEnum node)
+        {
+            // Enums don't exist in final code
+            return node;
+        }
 
         public Node Visit(StaticIf node)
         {

@@ -663,6 +663,14 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             return node;
         }
 
+        public virtual Node Visit(MultiEnum node)
+        {
+            for (int i = 0; i < node.values.Length; i++)
+                node.values[i] = new Tuple<string, Node>(node.values[i].Item1, node.values[i].Item2.Accept(this));
+
+            return node;
+        }
+
         public virtual Node Visit(StaticIf node)
         {
             for (int i = 0; i < node.ifs.Count; i++)

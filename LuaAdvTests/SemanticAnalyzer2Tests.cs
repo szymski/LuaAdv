@@ -34,6 +34,30 @@ namespace LuaAdvTests
         }
 
         [TestMethod]
+        public void test_multi_enum_1()
+        {
+            var analyzer = Analyze(@"enum test { a, b, c }; var something = test.a; var something = test.c;");
+
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Number));
+            Assert.AreEqual(0, ((Number)analyzer.MainNode[0][1][0]).value);
+
+            Assert.IsInstanceOfType(analyzer.MainNode[0][2][0], typeof(Number));
+            Assert.AreEqual(2, ((Number)analyzer.MainNode[0][2][0]).value);
+        }
+
+        [TestMethod]
+        public void test_multi_enum_2()
+        {
+            var analyzer = Analyze(@"enum test { a = ""test"", b, c = 123 }; var something = test.a; var something = test.c;");
+
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(StringType));
+            Assert.AreEqual("test", ((StringType)analyzer.MainNode[0][1][0]).value);
+
+            Assert.IsInstanceOfType(analyzer.MainNode[0][2][0], typeof(Number));
+            Assert.AreEqual(123, ((Number)analyzer.MainNode[0][2][0]).value);
+        }
+
+        [TestMethod]
         public void test_static_if()
         {
             var analyzer = Analyze(@"

@@ -293,7 +293,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 {
                     var exp = Expression();
                     RequireEndToken("';' required to end lambda function declaration.");
-                    
+
                     return new StatementLambdaFunctionDeclaration(local, funcToken, name, funcParameterList, exp);
                 }
 
@@ -350,7 +350,32 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
                 if (AcceptSymbol("{")) // TODO: Multiple value enum
                 {
-                    throw new NotImplementedException();
+                    var values = new List<Tuple<string, Node>>();
+
+                    int index = 0;
+                    bool gotComma = true;
+                    while (!AcceptSymbol("}"))
+                    {
+                        if(!gotComma)
+                            ThrowException("Comma expected after enum key.");
+
+                        var keyName = RequireIdentifier("Enum key expected.");
+
+                        if (AcceptSymbol("="))
+                        {
+                            var keyValue = Expression("Enum value expected.");
+                            values.Add(new Tuple<string, Node>(keyName.Value, keyValue));
+                        }
+                        else
+                            values.Add(new Tuple<string, Node>(keyName.Value, new Number(keyName, index)));
+
+                        index++;
+                        gotComma = AcceptSymbol(",");
+                    }
+
+                    RequireEndToken("';' required to end variable declaration.");
+
+                    return new MultiEnum(enumToken, name, values.ToArray());
                 }
 
                 RequireSymbol("=", "Enum value assignment expected.");

@@ -155,14 +155,42 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
         public override Node Visit(Variable node)
         {
-            var enumNode = CurrentScope.LookupEnum(node.name);
+            var enumNode = CurrentScope.LookupSingleEnum(node.name);
             if (enumNode != null)
                 return enumNode.value.Accept(this);
 
             return node;
         }
 
+        public override Node Visit(TableDotIndex node)
+        {
+            node.table = (Expression)node.table.Accept(this);
+
+            if (node.table is Variable variable)
+            {
+                var name = variable.name;
+
+                var enumNode = CurrentScope.LookupMultiEnum(name);
+                if (enumNode != null)
+                {
+                    var key = node.index;
+                    var value = enumNode.values.FirstOrDefault(v => v.Item1 == key);
+                    if(value == null)
+                        throw new CompilerException($"There is no such key '{key}' in the enum '{name}'.", node.Token);
+
+                    return value.Item2;
+                }
+            }
+
+            return node;
+        }
+
         public override Node Visit(SingleEnum node)
+        {
+            return new NullStatement(node.Token);
+        }
+
+        public override Node Visit(MultiEnum node)
         {
             return new NullStatement(node.Token);
         }
@@ -174,7 +202,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                 var ifChild = node.ifs[i];
 
                 // Else
-                if(i == node.ifs.Count - 1 && ifChild.Item2 == null)
+                if (i == node.ifs.Count - 1 && ifChild.Item2 == null)
                     return ifChild.Item3.Accept(this);
 
                 var condition = ifChild.Item2.Accept(this) as Expression;
@@ -185,7 +213,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                     isTrue = ((Bool)condition).value;
                 else if (condition is Number)
                     isTrue = ((Number)condition).value > 0;
-                else if(condition is Variable == false)
+                else if (condition is Variable == false)
                     throw new CompilerException("Only basic types are supported in static if statements.", ifChild.Item2.Token);
 
                 if (isTrue)

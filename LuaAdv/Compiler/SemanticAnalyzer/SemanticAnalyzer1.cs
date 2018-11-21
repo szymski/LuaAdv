@@ -281,7 +281,17 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         public override Node Visit(SingleEnum node)
         {
             node.value = node.value.Accept(this);
-            CurrentScope.AddEnum(node);
+            CurrentScope.AddSingleEnum(node);
+            return node;
+        }
+
+        public override Node Visit(MultiEnum node)
+        {
+            for (int i = 0; i < node.values.Length; i++)
+                node.values[i] = new Tuple<string, Node>(node.values[i].Item1, node.values[i].Item2.Accept(this));
+
+            CurrentScope.AddMultiEnum(node);
+
             return node;
         }
     }

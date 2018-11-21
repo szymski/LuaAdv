@@ -32,13 +32,14 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         }
 
         private Dictionary<string, SingleEnum> _singleEnums = new Dictionary<string, SingleEnum>();
+        private Dictionary<string, MultiEnum> _multiEnums = new Dictionary<string, MultiEnum>();
 
         public Scope(Scope parent = null)
         {
             Parent = parent;
         }
 
-        public void AddEnum(SingleEnum node)
+        public void AddSingleEnum(SingleEnum node)
         {
             // TODO: Allow enum overwriting?
             if (_singleEnums.ContainsKey(node.name))
@@ -50,12 +51,32 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             _singleEnums.Add(node.name, node);
         }
 
-        public SingleEnum LookupEnum(string name)
+        public void AddMultiEnum(MultiEnum node)
+        {
+            // TODO: Allow enum overwriting?
+            if (_multiEnums.ContainsKey(node.name))
+            {
+                _multiEnums[node.name] = node;
+                return;
+            }
+
+            _multiEnums.Add(node.name, node);
+        }
+
+        public SingleEnum LookupSingleEnum(string name)
         {
             if (_singleEnums.ContainsKey(name))
                 return _singleEnums[name];
             else
-                return Parent?.LookupEnum(name);
+                return Parent?.LookupSingleEnum(name);
+        }
+
+        public MultiEnum LookupMultiEnum(string name)
+        {
+            if (_multiEnums.ContainsKey(name))
+                return _multiEnums[name];
+            else
+                return Parent?.LookupMultiEnum(name);
         }
 
         public void JoinScope(Scope scope)
