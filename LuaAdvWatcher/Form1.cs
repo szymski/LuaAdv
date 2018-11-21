@@ -24,6 +24,7 @@ namespace LuaAdvWatcher
         private string _outputDirectory = "";
         private string _docsDirectory = "";
         private string[] _toIncludeFiles = new string[0];
+        private bool _obfuscate = false;
 
         private Compiler _compiler = new Compiler();
 
@@ -91,6 +92,7 @@ namespace LuaAdvWatcher
             _inputDirectory = obj["input_dir"]?.Value<string>() ?? configFileDirectory;
             _outputDirectory = obj["output_dir"]?.Value<string>() ?? configFileDirectory;
             _docsDirectory = obj["docs_dir"]?.Value<string>() ?? configFileDirectory + "/docs/";
+            _obfuscate = obj["obfuscate"]?.Value<bool>() ?? false;
             _comment = "";
             if (obj["comment"] != null)
                 foreach (var line in obj["comment"].Values())
@@ -229,7 +231,7 @@ namespace LuaAdvWatcher
         {
             AddIncludesToCompiler();
             string preparedComment = PrepareComment(filename);
-            return preparedComment + _compiler.Compile(filename, source);
+            return preparedComment + _compiler.Compile(filename, source, _obfuscate);
         }
 
         private void AddIncludesToCompiler()

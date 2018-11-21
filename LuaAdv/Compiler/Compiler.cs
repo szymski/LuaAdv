@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using LuaAdv.Compiler.CodeGenerators.Lua;
+using LuaAdv.Compiler.Extensions;
 using LuaAdv.Compiler.SemanticAnalyzer;
 using LuaAdv.Compiler.SemanticAnalyzer1;
 
@@ -23,23 +25,31 @@ namespace LuaAdv.Compiler
 
         private Dictionary<string, IncludeCacheElement> _includeCache = new Dictionary<string, IncludeCacheElement>();
 
-        public string Compile(string filename, string source)
+        public string Compile(string filename, string source, bool obfuscate)
         {
             var lexer = new Lexer.Lexer(source);
             var syntaxAnalyzer = new SyntaxAnalyzer.SyntaxAnalyzer(lexer.Output);
 
             List<Scope> toJoinScopes = new List<Scope>();
-            foreach(var cacheElement in _includeCache)
-                if(cacheElement.Value.isGlobal && cacheElement.Value.filename != filename)
+            foreach (var cacheElement in _includeCache)
+                if (cacheElement.Value.isGlobal && cacheElement.Value.filename != filename)
                     toJoinScopes.Add(cacheElement.Value.scope);
 
             var semanticAnalyzer1 = new SemanticAnalyzer1.SemanticAnalyzer1(syntaxAnalyzer.OutputNode, toJoinScopes.ToArray());
             syntaxAnalyzer.OutputNode.Accept(semanticAnalyzer1);
             var semanticAnalyzer2 = new SemanticAnalyzer2(semanticAnalyzer1.MainNode);
             semanticAnalyzer1.MainNode.Accept(semanticAnalyzer2);
-            var codeGenerator = new LuaCodeGenerator(semanticAnalyzer2.MainNode);
+            var obfuscator = new CodeObfuscator(semanticAnalyzer2.MainNode);
+            if (obfuscate)
+                semanticAnalyzer2.MainNode.Accept(obfuscator);
+            var codeGenerator = new LuaCodeGenerator(obfuscator.MainNode);
 
-            return codeGenerator.Output;
+            var output = codeGenerator.Output;
+
+            if (obfuscate)
+                output = Regex.Replace(output, @"(\s|\n)+", " ");
+
+            return output;
         }
 
         public void AddInclude(string filename, string source, bool global, DateTime lastModified)
