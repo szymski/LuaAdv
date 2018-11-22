@@ -18,6 +18,8 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
     /// </summary>
     public class SemanticAnalyzer2 : TransparentVisitor
     {
+        public string FileName { get; set; } = "";
+
         public SemanticAnalyzer2(Node mainNode) : base(mainNode)
         {
         }
@@ -148,6 +150,8 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                     return new StringType(node.Token, DateTime.Now.ToString("G"));
                 case "__LONGDATETIME__":
                     return new StringType(node.Token, DateTime.Now.ToString("R"));
+                case "__FILE__":
+                    return new StringType(node.Token, this.FileName);
                 default:
                     throw new Exception($"'{node.value}' special token analysis not implemented.");
             }
@@ -175,7 +179,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                 {
                     var key = node.index;
                     var value = enumNode.values.FirstOrDefault(v => v.Item1 == key);
-                    if(value == null)
+                    if (value == null)
                         throw new CompilerException($"There is no such key '{key}' in the enum '{name}'.", node.Token);
 
                     return value.Item2;
@@ -221,6 +225,60 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             }
 
             return new NullStatement(null);
+        }
+
+        public override Node Visit(Add node)
+        {
+            node.left = node.left.Accept(this);
+            node.right = node.right.Accept(this);
+
+            if (node.left is Number left && node.right is Number right)
+                return new Number(node.Token, left.value + right.value);
+
+            return node;
+        }
+
+        public override Node Visit(Subtract node)
+        {
+            node.left = node.left.Accept(this);
+            node.right = node.right.Accept(this);
+
+            if (node.left is Number left && node.right is Number right)
+                return new Number(node.Token, left.value - right.value);
+
+            return node;
+        }
+
+        public override Node Visit(Multiply node)
+        {
+            node.left = node.left.Accept(this);
+            node.right = node.right.Accept(this);
+
+            if (node.left is Number left && node.right is Number right)
+                return new Number(node.Token, left.value * right.value);
+
+            return node;
+        }
+
+        public override Node Visit(Divide node)
+        {
+            node.left = node.left.Accept(this);
+            node.right = node.right.Accept(this);
+
+            if (node.left is Number left && node.right is Number right)
+                return new Number(node.Token, left.value / right.value);
+
+            return node;
+        }
+
+        public override Node Visit(GroupedEquation node)
+        {
+            node.expression = node.expression.Accept(this);
+
+            if (node.expression is Number n)
+                return new Number(node.Token, n.value);
+
+            return node;
         }
     }
 }

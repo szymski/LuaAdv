@@ -8,10 +8,10 @@ namespace LuaAdv.Compiler.Nodes.Expressions
 {
     public abstract class TwoSideOperator : Expression
     {
-        public Expression left;
-        public Expression right;
+        public Node left;
+        public Node right;
 
-        public TwoSideOperator(Expression left, Token token, Expression right)
+        public TwoSideOperator(Node left, Token token, Node right)
         {
             this.left = left;
             this.Token = token;

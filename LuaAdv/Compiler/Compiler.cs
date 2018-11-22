@@ -25,7 +25,7 @@ namespace LuaAdv.Compiler
 
         private Dictionary<string, IncludeCacheElement> _includeCache = new Dictionary<string, IncludeCacheElement>();
 
-        public string Compile(string filename, string source, bool obfuscate)
+        public string Compile(string filename, string source, bool obfuscate, string shortFilename)
         {
             var lexer = new Lexer.Lexer(source);
             var syntaxAnalyzer = new SyntaxAnalyzer.SyntaxAnalyzer(lexer.Output);
@@ -38,6 +38,7 @@ namespace LuaAdv.Compiler
             var semanticAnalyzer1 = new SemanticAnalyzer1.SemanticAnalyzer1(syntaxAnalyzer.OutputNode, toJoinScopes.ToArray());
             syntaxAnalyzer.OutputNode.Accept(semanticAnalyzer1);
             var semanticAnalyzer2 = new SemanticAnalyzer2(semanticAnalyzer1.MainNode);
+            semanticAnalyzer2.FileName = shortFilename;
             semanticAnalyzer1.MainNode.Accept(semanticAnalyzer2);
             var obfuscator = new CodeObfuscator(semanticAnalyzer2.MainNode);
             if (obfuscate)

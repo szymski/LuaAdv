@@ -198,6 +198,14 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             return node;
         }
 
+        public virtual Node Visit(AssignmentOperator node)
+        {
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            return node;
+        }
+
         public virtual Node Visit(ValueAssignmentOperator node)
         {
             node.left = (Expression)node.left.Accept(this);

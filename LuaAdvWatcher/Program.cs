@@ -22,7 +22,7 @@ namespace LuaAdvWatcher
 #if DEBUG
             //configFilename = "Test/.lua_adv";
             configFilename =
-                @"D:\Program Files\Steam\steamapps\common\GarrysMod\garrysmod\addons\_szymekk_bfonehud\luaa\.lua_adv";
+                @"F:\Projects\LuaAdv\LuaAdvWatcher\bin\Debug\Test\.lua_adv";
 #else
             if (args.Length == 0)
             {

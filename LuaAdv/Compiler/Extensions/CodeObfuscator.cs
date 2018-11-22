@@ -5,10 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using LuaAdv.Compiler.Nodes;
 using LuaAdv.Compiler.Nodes.Expressions;
+using LuaAdv.Compiler.Nodes.Expressions.Assignment;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
 using LuaAdv.Compiler.Nodes.Expressions.Comparison;
 using LuaAdv.Compiler.Nodes.Expressions.Logical;
 using LuaAdv.Compiler.Nodes.Expressions.Unary;
+using LuaAdv.Compiler.Nodes.Expressions.Unary.Post;
+using LuaAdv.Compiler.Nodes.Expressions.Unary.Pre;
 using LuaAdv.Compiler.SemanticAnalyzer1;
 
 namespace LuaAdv.Compiler.Extensions
@@ -57,12 +60,20 @@ namespace LuaAdv.Compiler.Extensions
                 return Parent?.GetInlined(name);
         }
 
+        public void RemoveInlined(string name)
+        {
+            if (_inlined.ContainsKey(name))
+                _inlined.Remove(name);
+            else
+                Parent?.RemoveInlined(name);
+        }
+
         public bool CanBeInlined(Node node)
         {
             if (node == null)
                 return false;
 
-            return (node is BasicType ||
+            return ((node is BasicType && !(node is StringType)) ||
                 node is TwoSideOperator ||
                 node is Not ||
                 node is Negative ||
@@ -162,9 +173,9 @@ namespace LuaAdv.Compiler.Extensions
 
         public override Node Visit(Variable node)
         {
-            //var inlined = CurrentObfuscatorScope.GetInlined(node.name);
-            //if (inlined != null)
-            //    return inlined;
+            var inlined = CurrentObfuscatorScope.GetInlined(node.name);
+            if (inlined != null)
+                return inlined;
 
             node.name = MapName(node.name);
 
@@ -173,10 +184,10 @@ namespace LuaAdv.Compiler.Extensions
 
         public override Node Visit(StatementFunctionDeclaration node)
         {
-            if (node.local && node.name is Variable)
+            if (node.local && node.name is Variable variable)
             {
-                var variable = (Variable)node.name;
-                variable.name = MapName(variable.name, true);
+                //variable.name = MapName(variable.name, true);
+                variable.name = CurrentObfuscatorScope.Parent.Rename(variable.name, true);
             }
 
             node.name = (NamedVariable)node.name.Accept(this);
@@ -223,11 +234,130 @@ namespace LuaAdv.Compiler.Extensions
         {
             for (int i = 0; i < node.variables.Length; i++)
             {
+                if(node.variables[i] is Variable variable)
+                    CurrentObfuscatorScope.RemoveInlined(variable.name);
                 node.variables[i] = (NamedVariable)node.variables[i].Accept(this);
             }
 
             for (int i = 0; i < node.values.Length; i++)
                 node.values[i] = node.values[i].Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(AddAssignmentOperator node)
+        {
+            if (node.left is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.left = (Expression) node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(SubtractAssignmentOperator node)
+        {
+            if (node.left is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(MultiplyAssignmentOperator node)
+        {
+            if (node.left is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(DivideAssignmentOperator node)
+        {
+            if (node.left is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(ConcatAssignmentOperator node)
+        {
+            if (node.left is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(ModuloAssignmentOperator node)
+        {
+            if (node.left is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(ValueAssignmentOperator node)
+        {
+            if (node.left is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.left = (Expression)node.left.Accept(this);
+            node.right = (Expression)node.right.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(PreDecrement node)
+        {
+            if (node.expression is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.expression = (Expression)node.expression.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(PreIncrement node)
+        {
+            if (node.expression is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.expression = (Expression)node.expression.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(PostDecrement node)
+        {
+            if (node.expression is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.expression = (Expression)node.expression.Accept(this);
+
+            return node;
+        }
+
+        public override Node Visit(PostIncrement node)
+        {
+            if (node.expression is Variable variable)
+                CurrentObfuscatorScope.RemoveInlined(variable.name);
+
+            node.expression = (Expression)node.expression.Accept(this);
 
             return node;
         }

@@ -36,7 +36,6 @@ namespace LuaAdvWatcher
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // Visible = false;
             InitTrayMenu();
             ParseConfig();
             CreateWatcher();
@@ -231,7 +230,7 @@ namespace LuaAdvWatcher
         {
             AddIncludesToCompiler();
             string preparedComment = PrepareComment(filename);
-            return preparedComment + _compiler.Compile(filename, source, _obfuscate);
+            return preparedComment + _compiler.Compile(filename, source, _obfuscate, filename);
         }
 
         private void AddIncludesToCompiler()
@@ -275,6 +274,11 @@ namespace LuaAdvWatcher
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
 
             File.WriteAllText(path, contents);
+        }
+
+        private void Form1_Shown(object sender, EventArgs e)
+        {
+            Hide();
         }
     }
 }
