@@ -74,7 +74,6 @@
     <Compile Include="Compiler\Nodes\Expressions\Conditional\ConditionalAnd.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Conditional\ConditionalOr.cs" />
     <Compile Include="Compiler\Nodes\Expressions\NullPropagation.cs" />
-    <Compile Include="Compiler\Nodes\Expressions\ScopedExpression.cs" />
     <Compile Include="Compiler\Nodes\Expressions\SpecialNode.cs" />
     <Compile Include="Compiler\Nodes\Expressions\SuperCall.cs" />
     <Compile Include="Compiler\Nodes\Expressions\TableLength.cs" />

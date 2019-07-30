@@ -311,6 +311,18 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
                 return newNode;
             }
+
+            else if(innerNode is StatementMethodDeclaration method)
+            {
+                
+
+                var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
+                var anonymousFunc = new AnonymousFunction(method.Token, (new [] {new Tuple<Token, string, Expression>(null, "self", null)}).Concat(method.parameterList).ToList(), method.sequence);
+                var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { anonymousFunc });
+                var newNode = new StatementExpression(new ValueAssignmentOperator(new TableDotIndex(method.tableName, null, method.name), node.token, decoratorCall));
+
+                return newNode;
+            }
             else if (innerNode is Class cl)
             {
                 throw new NotImplementedException();
