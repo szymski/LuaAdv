@@ -74,6 +74,7 @@
     <Compile Include="Compiler\Nodes\Expressions\Conditional\ConditionalAnd.cs" />
     <Compile Include="Compiler\Nodes\Expressions\Conditional\ConditionalOr.cs" />
     <Compile Include="Compiler\Nodes\Expressions\NullPropagation.cs" />
+    <Compile Include="Compiler\Nodes\Expressions\ScopedExpression.cs" />
     <Compile Include="Compiler\Nodes\Expressions\SpecialNode.cs" />
     <Compile Include="Compiler\Nodes\Expressions\SuperCall.cs" />
     <Compile Include="Compiler\Nodes\Expressions\TableLength.cs" />
@@ -118,6 +119,7 @@
     <Compile Include="Compiler\Nodes\ScopeNode.cs" />
     <Compile Include="Compiler\Nodes\Statements\Class.cs" />
     <Compile Include="Compiler\Nodes\Statements\ClassMethod.cs" />
+    <Compile Include="Compiler\Nodes\Statements\Decorator.cs" />
     <Compile Include="Compiler\Nodes\Statements\MultiEnum.cs" />
     <Compile Include="Compiler\Nodes\Statements\StaticIf.cs" />
     <Compile Include="Compiler\Nodes\Statements\SingleEnum.cs" />

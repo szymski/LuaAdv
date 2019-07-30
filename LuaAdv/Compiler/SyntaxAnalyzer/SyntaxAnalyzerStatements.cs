@@ -248,6 +248,53 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                 return new Return(returnToken, expList.ToArray());
             }
 
+            return Statement_Decorator();
+        }
+
+        Statement Statement_Decorator()
+        {
+            if (AcceptSymbol("@"))
+            {
+                var decoratorToken = token;
+
+                var namedVariable = NamedVariable();
+
+                Node[] parameters = { };
+
+                if (AcceptSymbol("("))
+                {
+                    parameters = ExpressionList().Cast<Node>().ToArray();
+
+                    RequireSymbol(")", "')' required to close decorator parameters declaration.");
+
+                    //return new Decorator(decoratorToken, namedVariable, parameters);
+                }
+
+                SkipComments(false, false);
+
+                if (AcceptSymbol("@"))
+                {
+                    PrevToken();
+                    return new Decorator(decoratorToken, Statement_Decorator(), namedVariable, parameters);
+                }
+
+                // TODO: Allow local function
+                if (AcceptKeyword("function"))
+                {
+                    PrevToken();
+                    return new Decorator(decoratorToken, Statement_Function(), namedVariable, parameters);
+                }
+
+                // TODO: Allow local class
+                if (AcceptKeyword("class"))
+                {
+                    PrevToken();
+                    return new Decorator(decoratorToken, Statement_Class(), namedVariable, parameters);
+                }
+
+                ThrowException("Function or class expected.");
+            }
+
             return Statement_Function();
         }
 

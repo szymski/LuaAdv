@@ -556,6 +556,51 @@ class Test {
             Assert.AreEqual("name3", _enum.values[2].Item1);
             Assert.AreEqual(2, ((Number)_enum.values[2].Item2).value);
         }
+
+        [Test]
+        public void test_decorator_no_params()
+        {
+            var lexer = new Lexer("@decorator function a() {}\n@decorator.a.b class b {}");
+            var analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            {
+                var node = analyzer.Statement();
+                Assert.IsInstanceOf<Decorator>(node);
+                Assert.IsInstanceOf<NamedVariable>(node[0]);
+                Assert.IsInstanceOf<StatementFunctionDeclaration>(node[1]);
+            }
+
+            {
+                var node = analyzer.Statement();
+                Assert.IsInstanceOf<Decorator>(node);
+                Assert.IsInstanceOf<NamedVariable>(node[0]);
+                Assert.IsInstanceOf<Class>(node[1]);
+            }
+        }
+
+        [Test]
+        public void test_decorator_params()
+        {
+            var lexer = new Lexer("@decorator(1, 2, 3) function a() {}");
+            var analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var decorator = (Decorator)analyzer.Statement();
+            Assert.IsInstanceOf<Number>(decorator.parameters[0]);
+            Assert.IsInstanceOf<Number>(decorator.parameters[1]);
+            Assert.IsInstanceOf<Number>(decorator.parameters[2]);
+            Assert.IsInstanceOf<StatementFunctionDeclaration>(decorator.decoratedNode);
+        }
+
+        [Test]
+        public void test_multi_decorator()
+        {
+            var lexer = new Lexer("@decorator @decorator2(1, 2, 3) function a() {}");
+            var analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var decorator = (Decorator)analyzer.Statement();
+            Assert.IsInstanceOf<Decorator>(decorator.decoratedNode);
+            Assert.IsInstanceOf<StatementFunctionDeclaration>((decorator.decoratedNode as Decorator).decoratedNode);
+        }
     }
 
     [TestFixture]

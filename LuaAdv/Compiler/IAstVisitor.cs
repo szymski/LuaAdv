@@ -130,6 +130,7 @@ namespace LuaAdv.Compiler
         Node Visit(SpecialNode node);
         Node Visit(SingleEnum node);
         Node Visit(MultiEnum node);
+        Node Visit(Decorator node);
 
         Node Visit(StaticIf node);
     }

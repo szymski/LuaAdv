@@ -280,5 +280,43 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             return node;
         }
+
+        public override Node Visit(Decorator node)
+        {
+            node.function = node.function.Accept(this);
+
+            for (int i = 0; i < node.parameters.Length; i++)
+                node.parameters[i] = node.parameters[i].Accept(this);
+
+            node.decoratedNode = node.decoratedNode.Accept(this);
+
+            Node innerNode = node.decoratedNode;
+            if (innerNode is ScopeNode scope)
+                innerNode = scope.node;
+
+            if (innerNode is StatementFunctionDeclaration func)
+            {
+                var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
+                var anonymousFunc = new AnonymousFunction(func.Token, func.parameterList, func.sequence);
+                var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { anonymousFunc });
+                var newNode = new StatementExpression(new ValueAssignmentOperator(func.name, node.token, decoratorCall));
+
+                return newNode;
+            }
+            else if (innerNode is StatementExpression stmtExpr && stmtExpr.expression is ValueAssignmentOperator assignOp)
+            {
+                var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
+                var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { assignOp.right });
+                var newNode = new StatementExpression(new ValueAssignmentOperator((Expression)assignOp.left, assignOp.Token, decoratorCall));
+
+                return newNode;
+            }
+            else if (innerNode is Class cl)
+            {
+                throw new NotImplementedException();
+            }
+
+            return node.decoratedNode;
+        }
     }
 }

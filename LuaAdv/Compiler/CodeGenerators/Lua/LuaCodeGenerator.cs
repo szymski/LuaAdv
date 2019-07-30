@@ -1230,6 +1230,12 @@ end";
             return node;
         }
 
+        public Node Visit(Decorator node)
+        {
+            // Decorators don't exist in final code
+            return node;
+        }
+
         public Node Visit(StaticIf node)
         {
             throw new Exception("Static if shouldn't exist here.");

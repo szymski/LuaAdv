@@ -679,6 +679,18 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             return node;
         }
 
+        public virtual Node Visit(Decorator node)
+        {
+            node.function = node.function.Accept(this);
+
+            for (int i = 0; i < node.parameters.Length; i++)
+                node.parameters[i] = node.parameters[i].Accept(this);
+
+            node.decoratedNode = node.decoratedNode.Accept(this);
+
+            return node;
+        }
+
         public virtual Node Visit(StaticIf node)
         {
             for (int i = 0; i < node.ifs.Count; i++)
