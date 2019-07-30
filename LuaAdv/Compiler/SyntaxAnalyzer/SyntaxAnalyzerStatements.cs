@@ -278,14 +278,31 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                     return new Decorator(decoratorToken, Statement_Decorator(), namedVariable, parameters);
                 }
 
-                // TODO: Allow local function
+                if (AcceptKeyword("local"))
+                {
+                    if (AcceptKeyword("function"))
+                    {
+                        PrevToken();
+                        PrevToken();
+                        return new Decorator(decoratorToken, Statement_Function(), namedVariable, parameters);
+                    }
+
+                    if (AcceptKeyword("class"))
+                    {
+                        PrevToken();
+                        PrevToken();
+                        return new Decorator(decoratorToken, Statement_Class(), namedVariable, parameters);
+                    }
+
+                    ThrowException("Unexpected keyword 'local'.");
+                }
+
                 if (AcceptKeyword("function"))
                 {
                     PrevToken();
                     return new Decorator(decoratorToken, Statement_Function(), namedVariable, parameters);
                 }
 
-                // TODO: Allow local class
                 if (AcceptKeyword("class"))
                 {
                     PrevToken();

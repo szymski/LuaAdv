@@ -299,7 +299,11 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                 var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
                 var anonymousFunc = new AnonymousFunction(func.Token, func.parameterList, func.sequence);
                 var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { anonymousFunc });
-                var newNode = new StatementExpression(new ValueAssignmentOperator(func.name, node.token, decoratorCall));
+                Node newNode;
+                if (func.local)
+                    newNode = new LocalVariablesDeclaration(new [] {new Tuple<Token, string>(func.name.Token, ((Variable)func.name).name) }, new []{ decoratorCall });
+                else
+                    newNode = new StatementExpression(new ValueAssignmentOperator(func.name, node.token, decoratorCall));
 
                 return newNode;
             }
@@ -312,12 +316,12 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                 return newNode;
             }
 
-            else if(innerNode is StatementMethodDeclaration method)
+            else if (innerNode is StatementMethodDeclaration method)
             {
-                
+
 
                 var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
-                var anonymousFunc = new AnonymousFunction(method.Token, (new [] {new Tuple<Token, string, Expression>(null, "self", null)}).Concat(method.parameterList).ToList(), method.sequence);
+                var anonymousFunc = new AnonymousFunction(method.Token, (new[] { new Tuple<Token, string, Expression>(null, "self", null) }).Concat(method.parameterList).ToList(), method.sequence);
                 var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { anonymousFunc });
                 var newNode = new StatementExpression(new ValueAssignmentOperator(new TableDotIndex(method.tableName, null, method.name), node.token, decoratorCall));
 
