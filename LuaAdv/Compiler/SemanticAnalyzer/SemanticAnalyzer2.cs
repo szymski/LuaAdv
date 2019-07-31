@@ -288,7 +288,33 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             for (int i = 0; i < node.parameters.Length; i++)
                 node.parameters[i] = node.parameters[i].Accept(this);
 
+            if (node.decoratedNode is Class cl)
+            {
+                var seq = (Sequence)node.decoratedNode.Accept(this);
+
+                var classVar = new Variable(node.token, $"C{cl.name}");
+
+                var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
+                var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { classVar });
+                var newNode = new StatementExpression(new ValueAssignmentOperator(classVar, node.token, decoratorCall));
+
+                return new DecoratedClass(cl, seq.nodes, new Node[] { newNode });
+            }
+
             node.decoratedNode = node.decoratedNode.Accept(this);
+
+            if (node.decoratedNode is DecoratedClass decoratedClass)
+            {
+                var seq = (Sequence)node.decoratedNode.Accept(this);
+
+                var classVar = new Variable(node.token, $"C{decoratedClass.@class.name}");
+
+                var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
+                var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { classVar });
+                var newNode = new StatementExpression(new ValueAssignmentOperator(classVar, node.token, decoratorCall));
+
+                return new DecoratedClass(decoratedClass.@class, decoratedClass.classSequence, new Node[] { newNode }.Concat(decoratedClass.decoratorSequence).ToArray());
+            }
 
             Node innerNode = node.decoratedNode;
             if (innerNode is ScopeNode scope)
@@ -318,8 +344,6 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             else if (innerNode is StatementMethodDeclaration method)
             {
-
-
                 var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
                 var anonymousFunc = new AnonymousFunction(method.Token, (new[] { new Tuple<Token, string, Expression>(null, "self", null) }).Concat(method.parameterList).ToList(), method.sequence);
                 var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { anonymousFunc });
@@ -327,12 +351,13 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
                 return newNode;
             }
-            else if (innerNode is Class cl)
-            {
-                throw new NotImplementedException();
-            }
 
             return node.decoratedNode;
+        }
+
+        public override Node Visit(DecoratedClass node)
+        {
+            return new Sequence(null, node.classSequence);
         }
     }
 }

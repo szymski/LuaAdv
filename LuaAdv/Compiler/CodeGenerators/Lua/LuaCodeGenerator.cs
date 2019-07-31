@@ -1236,6 +1236,11 @@ end";
             return node;
         }
 
+        public Node Visit(DecoratedClass node)
+        {
+            return new Sequence(null, node.classSequence.Concat(node.decoratorSequence).ToArray()).Accept(this);
+        }
+
         public Node Visit(StaticIf node)
         {
             throw new Exception("Static if shouldn't exist here.");

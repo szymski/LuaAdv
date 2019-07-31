@@ -118,6 +118,7 @@
     <Compile Include="Compiler\Nodes\ScopeNode.cs" />
     <Compile Include="Compiler\Nodes\Statements\Class.cs" />
     <Compile Include="Compiler\Nodes\Statements\ClassMethod.cs" />
+    <Compile Include="Compiler\Nodes\Statements\DecoratedClass.cs" />
     <Compile Include="Compiler\Nodes\Statements\Decorator.cs" />
     <Compile Include="Compiler\Nodes\Statements\MultiEnum.cs" />
     <Compile Include="Compiler\Nodes\Statements\StaticIf.cs" />

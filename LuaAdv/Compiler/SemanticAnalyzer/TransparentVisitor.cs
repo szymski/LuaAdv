@@ -634,7 +634,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         {
             var newFields = new List<Tuple<string, Expression, TokenDocumentationComment>>();
             foreach (var field in node.fields)
-                newFields.Add(new Tuple<string, Expression, TokenDocumentationComment>(field.Item1, (Expression) field.Item2?.Accept(this), field.Item3));
+                newFields.Add(new Tuple<string, Expression, TokenDocumentationComment>(field.Item1, (Expression)field.Item2?.Accept(this), field.Item3));
 
             node.fields = newFields.ToArray();
 
@@ -689,6 +689,11 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             node.decoratedNode = node.decoratedNode.Accept(this);
 
             return node;
+        }
+
+        public virtual Node Visit(DecoratedClass node)
+        {
+            return new Sequence(null, node.classSequence.Concat(node.decoratorSequence).ToArray()).Accept(this);
         }
 
         public virtual Node Visit(StaticIf node)
