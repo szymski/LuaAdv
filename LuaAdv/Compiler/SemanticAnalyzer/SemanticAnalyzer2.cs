@@ -7,6 +7,7 @@ using LuaAdv.Compiler.Nodes;
 using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Expressions.Assignment;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
+using LuaAdv.Compiler.Nodes.Expressions.Unary;
 using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
 using LuaAdv.Compiler.SemanticAnalyzer1;
@@ -213,10 +214,10 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
                 bool isTrue = false;
 
-                if (condition is Bool)
-                    isTrue = ((Bool)condition).value;
-                else if (condition is Number)
-                    isTrue = ((Number)condition).value > 0;
+                if (condition is Bool b)
+                    isTrue = b.value;
+                else if (condition is Number number)
+                    isTrue = number.value > 0;
                 else if (condition is Variable == false)
                     throw new CompilerException("Only basic types are supported in static if statements.", ifChild.Item2.Token);
 
@@ -227,6 +228,16 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             return new NullStatement(null);
         }
 
+        public override Node Visit(Not node)
+        {
+            node.expression = (Expression)node.expression.Accept(this);
+
+            if (node.expression is Bool exp)
+                return new Bool(exp.Token, !exp.value);
+
+            return node;
+        }
+        
         public override Node Visit(Add node)
         {
             node.left = node.left.Accept(this);

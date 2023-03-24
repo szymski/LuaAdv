@@ -264,6 +264,8 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         public override Node Visit(AnonymousLambdaFunction node)
         {
             var scope = new Scope(CurrentScope);
+            scope.FunctionName = $"{CurrentScope.FunctionName ?? "global"}_anonymous@{node.Token.Line}";
+            scope.RawFunctionName = $"{CurrentScope.RawFunctionName ?? "global"}_anonymous@{node.Token.Line}";
             var previousScope = CurrentScope;
             CurrentScope = scope;
 

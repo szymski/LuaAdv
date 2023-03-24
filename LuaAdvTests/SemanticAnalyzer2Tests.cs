@@ -1,6 +1,7 @@
 ﻿using System;
 using LuaAdv.Compiler.Lexer;
 using LuaAdv.Compiler.Nodes;
+using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
 using LuaAdv.Compiler.Nodes.Statements;
 using LuaAdv.Compiler.SemanticAnalyzer;
@@ -61,24 +62,63 @@ namespace LuaAdvTests
         public void test_static_if()
         {
             var analyzer = Analyze(@"
-static if(something) {
-    should_not_exist();
-}
+                static if(something) {
+                    should_not_exist();
+                }
 
-enum compile = true;
+                enum compile = true;
 
-static if(compile) {
-    should_exist();
-}
+                static if(compile) {
+                    should_exist();
+                }
 
-static if(something)
-    should_not_exist();
-else
-    but_this_should();
-");
+                static if(something)
+                    should_not_exist();
+                else
+                    but_this_should();
+                ");
 
             Assert.IsInstanceOfType(analyzer.MainNode[0][0], typeof(NullStatement));
             Assert.IsInstanceOfType(analyzer.MainNode[0][3][0], typeof(StatementExpression));
+        }
+        
+        [TestMethod]
+        public void test_static_if_bool()
+        {
+            var analyzer = Analyze(@"
+                enum value = true;
+
+                static if(value) {
+                    should_exist();
+                }
+                ");
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0], typeof(NullStatement));
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0][0], typeof(FunctionCall));
+        }
+        
+        [TestMethod]
+        public void test_static_if_negated_bool()
+        {
+            var analyzer = Analyze(@"
+                enum value = true;
+
+                static if(!value) {
+                    should_exist();
+                }
+
+                enum value2 = false;
+
+                static if(!value2) {
+                    should_exist();
+                }
+                ");
+            
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0], typeof(NullStatement));
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1], typeof(NullStatement));
+            
+            Assert.IsInstanceOfType(analyzer.MainNode[0][2], typeof(NullStatement));
+            Assert.IsInstanceOfType(analyzer.MainNode[0][3], typeof(Sequence));
+            Assert.IsInstanceOfType(analyzer.MainNode[0][3][0][0], typeof(FunctionCall));
         }
     }
 }
