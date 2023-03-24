@@ -17,4 +17,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="UpgradeReport.sarif" />
+  </ItemGroup>
 </Project>

@@ -120,5 +120,172 @@ namespace LuaAdvTests
             Assert.IsInstanceOfType(analyzer.MainNode[0][3], typeof(Sequence));
             Assert.IsInstanceOfType(analyzer.MainNode[0][3][0][0], typeof(FunctionCall));
         }
+        
+        [TestMethod]
+        public void test_static_if_number_equality()
+        {
+            var analyzer = Analyze(@"
+                static if(2 + 3 == 5) {
+                    should_exist();
+                }
+
+                static if(2 + 3 == 8) {
+                    should_not_exist();
+                }
+                ");
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0][0], typeof(FunctionCall));
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1], typeof(NullStatement));
+        }
+        
+        [TestMethod]
+        public void test_static_if_number_inequality()
+        {
+            var analyzer = Analyze(@"
+                static if(2 + 3 != 8) {
+                    should_exist();
+                }
+
+                static if(2 + 3 != 5) {
+                    should_not_exist();
+                }
+                ");
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0][0], typeof(FunctionCall));
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1], typeof(NullStatement));
+        }
+        
+        [TestMethod]
+        public void test_static_if_string_equality()
+        {
+            var analyzer = Analyze("""
+                enum version = "2.0";
+
+                static if(version == "2.0") {
+                    should_exist();
+                }
+
+                static if("1.0" == version) {
+                    should_not_exist();
+                }
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0], typeof(NullStatement));
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0][0], typeof(FunctionCall));
+            Assert.IsInstanceOfType(analyzer.MainNode[0][2], typeof(NullStatement));
+        }
+        
+        [TestMethod]
+        public void test_equality_numbers()
+        {
+            var analyzer = Analyze("""
+                var equal = (0.0001 == 0.0001);
+                var notEqual = 2 == 3;
+                var equal2 = (2 + 3) == 5;
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][0][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][1][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][2][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][2][0]).value);
+        }
+        
+        [TestMethod]
+        public void test_non_equality_numbers()
+        {
+            var analyzer = Analyze("""
+                var notEqual = 2 != 3;
+                var equal = 5 != 5;
+                var equal2 = !((2 + 2) != 4);
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][0][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][1][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][2][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][2][0]).value);
+        }
+        
+        [TestMethod]
+        public void test_equality_strings()
+        {
+            var analyzer = Analyze("""
+                var equal = "str" == "str";
+                var notEqual = "left" == "right";
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][0][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][1][0]).value);
+        }
+
+        [TestMethod]
+        public void test_non_equality_strings()
+        {
+            var analyzer = Analyze("""
+                var notEqual = "left" != "right";
+                var equal = "str" != "str";
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][0][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][1][0]).value);
+        }
+
+        [TestMethod]
+        public void test_equality_bools()
+        {
+            var analyzer = Analyze("""
+                var equal = true == true;
+                var notEqual = false == true;
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][0][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][1][0]).value);
+        }
+        
+        [TestMethod]
+        public void test_non_equality_bools()
+        {
+            var analyzer = Analyze("""
+                var notEqual = false != true;
+                var equal = true != true;
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][0][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][1][0]).value);
+        }
+        
+        [TestMethod]
+        public void test_equality_nulls()
+        {
+            var analyzer = Analyze("""
+                var equal = null == null;
+                var notEqual = null == true;
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][0][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][1][0]).value);
+        }
+
+        [TestMethod]
+        public void test_not()
+        {
+            var analyzer = Analyze("""
+                var bool = !false;
+                var str = !"str";
+                var num = !0;
+                var nil = !null;
+                """);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][0][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][0][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][1][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][1][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][2][0], typeof(Bool));
+            Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][2][0]).value);
+            Assert.IsInstanceOfType(analyzer.MainNode[0][3][0], typeof(Bool));
+            Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][3][0]).value);
+        }
     }
 }

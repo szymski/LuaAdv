@@ -1,8 +1,9 @@
 using System;
+using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
 
 namespace LuaAdv.Compiler.Nodes.Expressions
 {
-    public class Null : Expression
+    public class Null : BasicType
     {
         public Null(Token token)
         {

@@ -7,6 +7,7 @@ using LuaAdv.Compiler.Nodes;
 using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Expressions.Assignment;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
+using LuaAdv.Compiler.Nodes.Expressions.Comparison;
 using LuaAdv.Compiler.Nodes.Expressions.Unary;
 using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
@@ -228,14 +229,48 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             return new NullStatement(null);
         }
 
+        public override Node Visit(Equals node)
+        {
+            node.left = node.left.Accept(this);
+            node.right = node.right.Accept(this);
+
+            return (node.left, node.right) switch
+            {
+                    (Number left, Number right) => new Bool(node.Token, Math.Abs(left.value - right.value) <= Number.EPSILON),
+                    (Bool left, Bool right) => new Bool(node.Token, left.value == right.value),
+                    (StringType left, StringType right) => new Bool(node.Token, left.value == right.value),
+                    (Null left, Null right) => new Bool(node.Token, true),
+                    (Null left, BasicType right) => new Bool(node.Token, false),
+                    (BasicType left, Null right) => new Bool(node.Token, false),
+                _ => node,
+            };
+        }
+        
+        public override Node Visit(NotEquals node)
+        {
+            node.left = node.left.Accept(this);
+            node.right = node.right.Accept(this);
+
+            Node equalNode = new Equals((Expression)node.left, node.Token, (Expression)node.right);
+            equalNode = equalNode.Accept(this);
+
+            if (equalNode is Bool b)
+                return new Bool(b.Token, !b.value);
+            
+            return node;
+        }
+
         public override Node Visit(Not node)
         {
             node.expression = (Expression)node.expression.Accept(this);
 
-            if (node.expression is Bool exp)
-                return new Bool(exp.Token, !exp.value);
-
-            return node;
+            return node.expression switch
+            {
+                Bool exp => new Bool(node.Token, !exp.value),
+                Null exp => new Bool(node.Token, true),
+                BasicType exp => new Bool(node.Token, false),
+                _ => node
+            };
         }
         
         public override Node Visit(Add node)
@@ -286,8 +321,8 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
         {
             node.expression = node.expression.Accept(this);
 
-            if (node.expression is Number n)
-                return new Number(node.Token, n.value);
+            if (node.expression is BasicType b)
+                return b;
 
             return node;
         }
