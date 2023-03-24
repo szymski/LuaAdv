@@ -26,20 +26,44 @@ namespace LuaAdvTests
         [TestMethod]
         public void test_numbers()
         {
-            Lexer lexer = new Lexer(@"123 0.0512 0xFF");
+            Lexer lexer = new Lexer(@"1234 0.0512 0xFF");
 
             int id = 0;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
-            Assert.AreEqual(((TokenNumber)lexer.Output[id]).Number, 123);
+            Assert.AreEqual(1234, ((TokenNumber)lexer.Output[id]).Number);
             id++;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
-            Assert.AreEqual(((TokenNumber)lexer.Output[id]).Number, 0.0512D);
+            Assert.AreEqual(0.0512D, ((TokenNumber)lexer.Output[id]).Number);
             id++;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
-            Assert.AreEqual(((TokenNumber)lexer.Output[id]).Number, 0xFF);
+            Assert.AreEqual(0xFF, ((TokenNumber)lexer.Output[id]).Number);
+            id++;
+        }
+        
+        [TestMethod]
+        public void test_numbers_with_separators()
+        {
+            Lexer lexer = new Lexer(@"1_234 1_000_000 0.051_232 0xFF");
+
+            int id = 0;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            Assert.AreEqual(1234, ((TokenNumber)lexer.Output[id]).Number);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            Assert.AreEqual(1000000, ((TokenNumber)lexer.Output[id]).Number);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            Assert.AreEqual(0.051232D, ((TokenNumber)lexer.Output[id]).Number);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            Assert.AreEqual(0xFF, ((TokenNumber)lexer.Output[id]).Number);
             id++;
         }
 
@@ -51,11 +75,11 @@ namespace LuaAdvTests
             int id = 0;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenString));
-            Assert.AreEqual(lexer.Output[id].Value, "I am a string");
+            Assert.AreEqual("I am a string", lexer.Output[id].Value);
             id++;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenString));
-            Assert.AreEqual(lexer.Output[id].Value, "I am also a string");
+            Assert.AreEqual("I am also a string", lexer.Output[id].Value);
             id++;
         }
 
@@ -67,7 +91,7 @@ namespace LuaAdvTests
             int id = 0;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenString));
-            Assert.AreEqual(lexer.Output[id].Value, "\\t \\\\ \\\"");
+            Assert.AreEqual("\\t \\\\ \\\"", lexer.Output[id].Value);
             id++;
         }
 
@@ -79,15 +103,15 @@ namespace LuaAdvTests
             int id = 0;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenString));
-            Assert.AreEqual(lexer.Output[id].Value, "no multi-line");
+            Assert.AreEqual("no multi-line", lexer.Output[id].Value);
             id++;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenString));
-            Assert.AreEqual(lexer.Output[id].Value, "multi\\n-line");
+            Assert.AreEqual("multi\\n-line", lexer.Output[id].Value);
             id++;
 
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenString));
-            Assert.AreEqual(lexer.Output[id].Value, "super\\nm\\nu\\nlti\\n-line");
+            Assert.AreEqual("super\\nm\\nu\\nlti\\n-line", lexer.Output[id].Value);
             id++;
         }
 

@@ -32,9 +32,9 @@ namespace LuaAdv.Compiler.Lexer
                     PushToken(new TokenNumber(Convert.ToInt32(patternMatch.Groups[1].Value, 16)),
                         Convert.ToInt32(patternMatch.Groups[1].Value, 16).ToString());
 
-                // Numbers // TODO: Number _ separator
-                else if (AcceptPattern(@"[0-9]+\.[0-9]+") || AcceptPattern(@"[0-9]+"))
-                    PushToken(new TokenNumber(double.Parse(patternMatch.Value.Replace('.', ','))), patternMatch.Value);
+                // Numbers
+                else if (AcceptPattern(@"(([0-9]{1,3}(_?[0-9]{3})*)|[0-9]+)+(\.([0-9]{1,3}(_?[0-9]{3})|[0-9]+)+)?|[0-9]+") || AcceptPattern(@"[0-9]+\.[0-9]+") || AcceptPattern(@"[0-9]+"))
+                    PushToken(new TokenNumber(double.Parse(patternMatch.Value.Replace("_", "").Replace('.', ','))), patternMatch.Value);
 
                 // Multi-line strings
                 else if (AcceptPattern("@\""))
