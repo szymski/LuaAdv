@@ -21,6 +21,8 @@ namespace LuaAdv.Compiler.CodeGenerators
         private Dictionary<string, DocumentationFile> _documentationFiles = new Dictionary<string, DocumentationFile>();
 
         private string _outputDir;
+        
+        public event Action<string> OnFileProcessed;
 
         public void AddFile(string filename, string contents)
         {
@@ -40,7 +42,10 @@ namespace LuaAdv.Compiler.CodeGenerators
             _outputDir = outputDir;
 
             foreach (var file in _files)
+            {
                 ProcessFile(file.Key, file.Value);
+                OnFileProcessed?.Invoke(file.Key);
+            }
 
             var result = new Dictionary<string, string>();
 

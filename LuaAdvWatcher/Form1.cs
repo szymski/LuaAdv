@@ -13,10 +13,8 @@ using LuaAdv.Compiler;
 using LuaAdv.Compiler.CodeGenerators;
 using Newtonsoft.Json.Linq;
 
-namespace LuaAdvWatcher
-{
-    public partial class Form1 : Form
-    {
+namespace LuaAdvWatcher {
+    public partial class Form1 : Form {
         private string _configFilename = "";
 
         private string _comment = "";
@@ -27,6 +25,7 @@ namespace LuaAdvWatcher
         private bool _obfuscate = false;
 
         private Compiler _compiler = new Compiler();
+        private ToolStripProgressBar _toolStripProgressBar;
 
         public Form1(string configFilename)
         {
@@ -45,14 +44,21 @@ namespace LuaAdvWatcher
         {
             trayIcon.Icon = Icon;
             trayIcon.Visible = true;
+            trayIcon.Text = "LuaAdvWatcher";
 
-            var context = new ContextMenu();
+            var context = new ContextMenuStrip();
 
-            context.MenuItems.Add("Compile all", (o, args) => CompileAll());
-            context.MenuItems.Add("Generate documentation", (o, args) => GenerateDocumentation());
-            context.MenuItems.Add("Exit", (o, args) => Close());
+            _toolStripProgressBar = new() { Visible = false };
+            context.Items.Add(_toolStripProgressBar);
+            context.Items.Add("Compile all", null, (o, args) => {
+                CompileAll();
+                HideProgressBar();
+            });
+            context.Items.Add("Generate documentation", null, (o, args) => GenerateDocumentation());
+            context.Items.Add(new ToolStripSeparator());
+            context.Items.Add("Exit", null, (o, args) => Close());
 
-            trayIcon.ContextMenu = context;
+            trayIcon.ContextMenuStrip = context;
 
             trayIcon.ShowBalloonTip(8000, "LuaAdv is running", "Now you can code in LuaAdv and every change will be compiled and put into the output folder.", ToolTipIcon.Info);
         }
@@ -61,17 +67,19 @@ namespace LuaAdvWatcher
         {
             FileSystemWatcher watcher = new FileSystemWatcher(_inputDirectory);
             watcher.NotifyFilter = NotifyFilters.LastWrite;
-            watcher.Filter = "*.lua*"; // .luaa and .lua files
+            watcher.Filter = "*.lua*";// .luaa and .lua files
             watcher.IncludeSubdirectories = true;
             watcher.EnableRaisingEvents = true;
 
             DateTime lastCompile = DateTime.Now;
 
-            watcher.Changed += (sender, args) =>
-            {
+            watcher.Changed += (sender, args) => {
+                // trayIcon.ShowBalloonTip(3000, "Compiling...", $"Compiling file '{args.Name}'", ToolTipIcon.Info);
+                
                 // For some reason, files changes are reported twice, so we have to wait a while
-                if (DateTime.Now.Subtract(lastCompile).Seconds < 1)
+                if (DateTime.Now.Subtract(lastCompile).TotalSeconds < 0.5)
                     return;
+                
 
                 lastCompile = DateTime.Now;
 
@@ -107,13 +115,24 @@ namespace LuaAdvWatcher
 
         private bool CompileAll(string dir = null, int level = 0)
         {
+            if(level == 0)
+                InitProgressBar();
+
             if (dir == null)
                 dir = _inputDirectory;
 
-            foreach (var file in new DirectoryInfo(dir).EnumerateFiles()
-                .Where(f => f.Extension == ".luaa" || f.Extension == ".lua"))
-                if (!ProcessFile(file))
+            var files = new DirectoryInfo(dir).EnumerateFiles()
+                .Where(f => f.Extension == ".luaa" || f.Extension == ".lua")
+                .ToArray();
+            _toolStripProgressBar.Maximum += files.Length;
+            foreach (var file in files)
+            {
+                var success = ProcessFile(file);
+                _toolStripProgressBar.Value++;
+                Application.DoEvents();
+                if (!success)
                     return false;
+            }
 
             // Do the same for all folders recursively
             foreach (var d in new DirectoryInfo(dir).EnumerateDirectories())
@@ -130,10 +149,16 @@ namespace LuaAdvWatcher
 
         private void GenerateDocumentation()
         {
+            InitProgressBar();
+
             try
             {
                 DocumentationGenerator docGen = new DocumentationGenerator();
                 AddDocumentationFiles(docGen);
+                docGen.OnFileProcessed += (_) => {
+                    _toolStripProgressBar.Value++;
+                    Application.DoEvents();
+                };
                 var result = docGen.Generate(_docsDirectory);
 
                 if (!Directory.Exists(_docsDirectory))
@@ -153,6 +178,23 @@ namespace LuaAdvWatcher
                 trayIcon.ShowBalloonTip(8000, "LuaAdv", "An error occured while generating the documentation!", ToolTipIcon.Error);
                 throw e;
             }
+            finally
+            {
+                HideProgressBar();
+            }
+        }
+
+        private void InitProgressBar()
+        {
+
+            _toolStripProgressBar.Visible = true;
+            _toolStripProgressBar.Maximum = 1;
+            _toolStripProgressBar.Value = 0;
+        }
+
+        private void HideProgressBar()
+        {
+            _toolStripProgressBar.Visible = false;
         }
 
         private bool AddDocumentationFiles(DocumentationGenerator docGen, string dir = null, int level = 0)
@@ -161,8 +203,9 @@ namespace LuaAdvWatcher
                 dir = _inputDirectory;
 
             foreach (var file in new DirectoryInfo(dir).EnumerateFiles()
-                .Where(f => f.Extension == ".luaa"))
+                         .Where(f => f.Extension == ".luaa"))
             {
+                _toolStripProgressBar.Maximum++;
                 string relativeFilename = file.FullName.Replace(_inputDirectory, "");
                 docGen.AddFile(relativeFilename, File.ReadAllText(file.FullName));
             }
@@ -201,7 +244,7 @@ namespace LuaAdvWatcher
 
             // Lua files are just copied to the output dir
             if (file.Extension == ".lua")
-                WriteToFile(outputFilename, contents); // TODO: Should it also include the comment here?
+                WriteToFile(outputFilename, contents);// TODO: Should it also include the comment here?
             else
             {
                 try

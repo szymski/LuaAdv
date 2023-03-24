@@ -14,10 +14,8 @@ using LuaAdv.Compiler.Nodes.Expressions.Unary.Post;
 using LuaAdv.Compiler.Nodes.Expressions.Unary.Pre;
 using LuaAdv.Compiler.SemanticAnalyzer1;
 
-namespace LuaAdv.Compiler.Extensions
-{
-    public class ObfuscatorScope
-    {
+namespace LuaAdv.Compiler.Extensions {
+    public class ObfuscatorScope {
         private static int _lastVarId = 0;
 
         public ObfuscatorScope Parent { get; set; }
@@ -74,11 +72,11 @@ namespace LuaAdv.Compiler.Extensions
                 return false;
 
             return ((node is BasicType && !(node is StringType)) ||
-                node is TwoSideOperator ||
-                node is Not ||
-                node is Negative ||
-                node is Negation) &&
-                (node.Children?.All(CanBeInlined) ?? true);
+                    node is TwoSideOperator ||
+                    node is Not ||
+                    node is Negative ||
+                    node is Negation) &&
+                   (node.Children?.All(CanBeInlined) ?? true);
         }
 
         public void MakeInlined(string name, Node node)
@@ -90,8 +88,7 @@ namespace LuaAdv.Compiler.Extensions
         }
     }
 
-    public class CodeObfuscator : TransparentVisitor
-    {
+    public class CodeObfuscator : TransparentVisitor {
         public ObfuscatorScope CurrentObfuscatorScope { get; protected set; }
 
         private Dictionary<string, string> _nameMap = new Dictionary<string, string>();
@@ -234,7 +231,7 @@ namespace LuaAdv.Compiler.Extensions
         {
             for (int i = 0; i < node.variables.Length; i++)
             {
-                if(node.variables[i] is Variable variable)
+                if (node.variables[i] is Variable variable)
                     CurrentObfuscatorScope.RemoveInlined(variable.name);
                 node.variables[i] = (NamedVariable)node.variables[i].Accept(this);
             }
@@ -250,7 +247,7 @@ namespace LuaAdv.Compiler.Extensions
             if (node.left is Variable variable)
                 CurrentObfuscatorScope.RemoveInlined(variable.name);
 
-            node.left = (Expression) node.left.Accept(this);
+            node.left = (Expression)node.left.Accept(this);
             node.right = (Expression)node.right.Accept(this);
 
             return node;
@@ -374,7 +371,7 @@ namespace LuaAdv.Compiler.Extensions
 
         public override Node Visit(Bool node)
         {
-            if(node.value)
+            if (node.value)
                 return new Not(new TokenIdentifier(), GenerateInvalidVariable());
             else
                 return new GroupedEquation(new TokenIdentifier(), new Equals(GenerateInvalidVariable(), new TokenIdentifier(), new Bool(new TokenIdentifier(), true)));
@@ -394,7 +391,7 @@ namespace LuaAdv.Compiler.Extensions
                 _stringMap.Add(value, id);
                 _stringTableNode.values = _stringTableNode.values.Concat(new Tuple<Expression, Expression>[]
                 {
-                    new Tuple<Expression, Expression>(null, new StringType(new TokenIdentifier(), value)), 
+                    new Tuple<Expression, Expression>(null, new StringType(new TokenIdentifier(), value)),
                 }).ToArray();
             }
 

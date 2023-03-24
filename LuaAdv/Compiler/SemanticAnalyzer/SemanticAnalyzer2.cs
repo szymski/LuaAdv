@@ -305,8 +305,6 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             if (node.decoratedNode is DecoratedClass decoratedClass)
             {
-                var seq = (Sequence)node.decoratedNode.Accept(this);
-
                 var classVar = new Variable(node.token, $"C{decoratedClass.@class.name}");
 
                 var decoratorConstructorCall = new FunctionCall((Expression)node.function, node.parameters);
