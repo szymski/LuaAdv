@@ -3,6 +3,7 @@ using LuaAdv.Compiler.Lexer;
 using LuaAdv.Compiler.Nodes;
 using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
+using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
 using LuaAdv.Compiler.SemanticAnalyzer;
 using LuaAdv.Compiler.SemanticAnalyzer1;
@@ -231,7 +232,7 @@ namespace LuaAdvTests
         }
 
         [TestMethod]
-        public void test_equality_bools()
+        public void test_equality_booleans()
         {
             var analyzer = Analyze("""
                 var equal = true == true;
@@ -244,7 +245,7 @@ namespace LuaAdvTests
         }
         
         [TestMethod]
-        public void test_non_equality_bools()
+        public void test_non_equality_booleans()
         {
             var analyzer = Analyze("""
                 var notEqual = false != true;
@@ -270,7 +271,7 @@ namespace LuaAdvTests
         }
 
         [TestMethod]
-        public void test_not()
+        public void test_unary_not()
         {
             var analyzer = Analyze("""
                 var bool = !false;
@@ -286,6 +287,36 @@ namespace LuaAdvTests
             Assert.AreEqual(false, ((Bool)analyzer.MainNode[0][2][0]).value);
             Assert.IsInstanceOfType(analyzer.MainNode[0][3][0], typeof(Bool));
             Assert.AreEqual(true, ((Bool)analyzer.MainNode[0][3][0]).value);
+        }
+        
+        [TestMethod]
+        public void test_interpolated_string_lowering()
+        {
+            /*
+                GroupedEquation(
+                    [0]Concat(
+                        [0]StringType("2 + 3 = "),
+                        [1]Concat(
+                            [0]Number(5),
+                            [1]StringType(", right?")
+                        )
+                    )
+                )
+            */
+            var analyzer = Analyze("var str = `2 + 3 = ${2 + 3}, right?`;");
+            var group = analyzer.MainNode[0][0][0] as GroupedEquation;
+            Assert.IsInstanceOfType(group, typeof(GroupedEquation));
+            
+            Assert.IsInstanceOfType(group[0], typeof(Concat));
+            
+            Assert.IsInstanceOfType(group[0][0], typeof(StringType));
+            Assert.AreEqual("2 + 3 = ", ((StringType)group[0][0]).value);
+            
+            Assert.IsInstanceOfType(group[0][1], typeof(Concat));
+            Assert.IsInstanceOfType(group[0][1][0], typeof(Number));
+            Assert.AreEqual(5, ((Number)group[0][1][0]).value);
+            Assert.IsInstanceOfType(group[0][1][1], typeof(StringType));
+            Assert.AreEqual(", right?", ((StringType)group[0][1][1]).value);
         }
     }
 }

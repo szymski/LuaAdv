@@ -34,7 +34,7 @@
             // 
             // trayIcon
             // 
-            this.trayIcon.Text = "notifyIcon1";
+            this.trayIcon.Text = "LuaAdv Watcher";
             this.trayIcon.Visible = true;
             // 
             // Form1

@@ -64,6 +64,7 @@ namespace LuaAdv.Compiler
         Node Visit(Bool node);
         Node Visit(Number node);
         Node Visit(StringType node);
+        Node Visit(InterpolatedString node);
 
         // Comparison
         Node Visit(Equals node);

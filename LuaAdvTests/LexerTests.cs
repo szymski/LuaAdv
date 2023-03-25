@@ -116,6 +116,187 @@ namespace LuaAdvTests
         }
 
         [TestMethod]
+        public void test_interpolated_strings_no_interpolation()
+        {
+            Lexer lexer = new Lexer(@"`No interpolation test` `123`");
+
+            int id = 0;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringStart));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringText));
+            Assert.AreEqual("No interpolation test", lexer.Output[id].Value);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringEnd));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringStart));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringText));
+            Assert.AreEqual("123", lexer.Output[id].Value);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringEnd));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+        }
+
+        [TestMethod]
+        public void test_interpolated_strings_empty()
+        {
+            Lexer lexer = new Lexer(@"``");
+
+            var id = 0;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringStart));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringEnd));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+            
+        }
+
+        [TestMethod]
+        public void test_interpolated_strings_with_single_interpolation()
+        {
+            Lexer lexer = new Lexer(@"`2 + 2 = ${2 + 2}`");
+
+            int id = 0;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringStart));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringText));
+            Assert.AreEqual("2 + 2 = ", lexer.Output[id].Value);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenSymbol));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringEnd));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+        }
+        
+        [TestMethod]
+        public void test_interpolated_strings_with_single_interpolation_text_after()
+        {
+            Lexer lexer = new Lexer(@"`2 + 2 = ${2 + 2} innit?`");
+
+            int id = 0;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringStart));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringText));
+            Assert.AreEqual("2 + 2 = ", lexer.Output[id].Value);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenSymbol));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringText));
+            Assert.AreEqual(" innit?", lexer.Output[id].Value);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringEnd));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+        }
+        
+        [TestMethod]
+        public void test_interpolated_strings_with_multiple_interpolations()
+        {
+            Lexer lexer = new Lexer(@"`${2} + ${3} = ${2 + 3}`");
+
+            int id = 0;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringStart));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringText));
+            Assert.AreEqual(" + ", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringText));
+            Assert.AreEqual(" = ", lexer.Output[id].Value);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenSymbol));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringEnd));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+        }
+        
+        [TestMethod]
+        public void test_interpolated_strings_nested()
+        {
+            Lexer lexer = new Lexer(@"`${`xd${123}`}`");
+
+            int id = 0;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringStart));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringStart));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringText));
+            Assert.AreEqual("xd", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenNumber));
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringEnd));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenInterpolatedStringEnd));
+            Assert.AreEqual("", lexer.Output[id].Value);
+            id++;
+        }
+        
+        [TestMethod]
         public void test_symbols()
         {
             Lexer lexer = new Lexer("!!>=<<(){=>");

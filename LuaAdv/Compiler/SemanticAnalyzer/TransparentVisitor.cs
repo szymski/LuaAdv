@@ -277,6 +277,12 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             return node;
         }
 
+        public virtual Node Visit(InterpolatedString node)
+        {
+            node.values = node.values.Select(x => (Expression)x.Accept(this)).ToArray();
+            return node;
+        }
+
         public virtual Node Visit(Equals node)
         {
             node.left = (Expression)node.left.Accept(this);

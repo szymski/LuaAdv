@@ -5,19 +5,60 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace LuaAdv.Compiler.Lexer
-{
-    public partial class Lexer
-    {
+namespace LuaAdv.Compiler.Lexer {
+    public partial class Lexer {
         void Pass()
         {
             while (NextChar())
             {
-                if (!SkipWhitespace())
+                if (!insideInterpolatedString && !SkipWhitespace())
                     break;
 
+                if (insideInterpolatedString)
+                {
+                    PrevChar();
+
+                    string str = "";
+                    int startLine = line;
+                    while (NextChar() && currentChar != '`' && currentChar != '$')
+                    {
+                        str += currentChar;
+
+                        if (currentChar == '\\')
+                        {
+                            NextChar();
+                            str += currentChar;
+                        }
+
+                        if (currentChar == '\n')
+                            ThrowException("Multi-line interpolated strings aren't possible yet.");
+                    }
+
+                    if (AcceptPattern(@"\$\{"))
+                    {
+                        if(str.Length > 0)
+                            PushToken(new TokenInterpolatedStringText(), str);
+
+                        insideInterpolatedString = false;
+                        continue;
+                    }
+
+                    if (!AcceptPattern("`"))
+                        ThrowException("Unexpected end of file.");
+
+                    if (line != startLine)
+                        ThrowException("Multi-line interpolated strings aren't possible yet.");
+
+                    insideInterpolatedString = false;
+                    interpolatedStringDepth--;
+
+                    if (str.Length > 0)
+                        PushToken(new TokenInterpolatedStringText(), str);
+                    PushToken(new TokenInterpolatedStringEnd(), "");
+                }
+
                 // Keywords and identifiers
-                if (AcceptPattern(@"[a-zA-Z_][a-zA-Z0-9_]*"))
+                else if (AcceptPattern(@"[a-zA-Z_][a-zA-Z0-9_]*"))
                 {
                     if (Specification.IsKeyword(patternMatch.Value))
                         PushToken(new TokenKeyword(), patternMatch.Value);
@@ -30,7 +71,7 @@ namespace LuaAdv.Compiler.Lexer
                 // Hex number
                 else if (AcceptPattern(@"0x([0-9a-fA-F]+)"))
                     PushToken(new TokenNumber(Convert.ToInt32(patternMatch.Groups[1].Value, 16)),
-                        Convert.ToInt32(patternMatch.Groups[1].Value, 16).ToString());
+                              Convert.ToInt32(patternMatch.Groups[1].Value, 16).ToString());
 
                 // Numbers
                 else if (AcceptPattern(@"(([0-9]{1,3}(_?[0-9]{3})*)|[0-9]+)+(\.([0-9]{1,3}(_?[0-9]{3})|[0-9]+)+)?|[0-9]+") || AcceptPattern(@"[0-9]+\.[0-9]+") || AcceptPattern(@"[0-9]+"))
@@ -86,6 +127,14 @@ namespace LuaAdv.Compiler.Lexer
                     PushToken(new TokenString(), str);
                 }
 
+                // Interpolated strings
+                else if (AcceptPattern("`"))
+                {
+                    insideInterpolatedString = true;
+                    interpolatedStringDepth++;
+                    PushToken(new TokenInterpolatedStringStart(), "");
+                }
+
                 // Single-line documentation comments
                 else if (AcceptPattern(@"///"))
                 {
@@ -109,7 +158,7 @@ namespace LuaAdv.Compiler.Lexer
                         if ((match = new Regex(@"\*/").Match(currentLine.Substring(character + (lines == 0 ? 1 : 0)))).Success)
                         {
                             value += currentLine.Substring(character + (lines == 0 ? 1 : 0),
-                                match.Index);
+                                                           match.Index);
                             character += (lines == 0 ? 2 : 0) + match.Index + 1;
                             break;
                         }
@@ -151,7 +200,7 @@ namespace LuaAdv.Compiler.Lexer
                             (match = new Regex(@"\*/").Match(currentLine.Substring(character + (lines == 0 ? 1 : 0)))).Success)
                         {
                             value += currentLine.Substring(character + (lines == 0 ? 1 : 0),
-                                match.Index);
+                                                           match.Index);
                             character += (lines == 0 ? 1 : 0) + match.Index + 1;
                             break;
                         }
@@ -167,6 +216,12 @@ namespace LuaAdv.Compiler.Lexer
                     }
 
                     PushToken(new TokenComment(), value);
+                }
+                
+                // Interpolated string end
+                else if(interpolatedStringDepth > 0 && !insideInterpolatedString && AcceptPattern(@"}"))
+                {
+                    insideInterpolatedString = true;
                 }
 
                 // Triple character symbols

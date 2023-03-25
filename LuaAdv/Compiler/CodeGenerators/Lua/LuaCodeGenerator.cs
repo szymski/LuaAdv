@@ -146,6 +146,8 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(Foreach node)
         {
+            // TODO: Come up with syntax for allowing iterators other than "pairs"
+            
             builder.Append("for {0}, {1} in pairs(", node.keyName ?? "_", node.varName);
             node.table.Accept(this);
             builder.AppendLine(") do");
@@ -588,6 +590,11 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             builder.Append("\"{0}\"", node.value);
 
             return node;
+        }
+
+        public Node Visit(InterpolatedString node)
+        {
+            throw new CompilerException("Interpolated strings are supposed to be lowered in semantic analysis.", node.Token);
         }
 
         public Node Visit(Equals node)

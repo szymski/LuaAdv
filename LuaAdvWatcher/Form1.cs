@@ -44,7 +44,7 @@ namespace LuaAdvWatcher {
         {
             trayIcon.Icon = Icon;
             trayIcon.Visible = true;
-            trayIcon.Text = "LuaAdvWatcher";
+            trayIcon.Text = "LuaAdv Watcher";
 
             var context = new ContextMenuStrip();
 

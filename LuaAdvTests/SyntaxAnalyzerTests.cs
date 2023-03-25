@@ -641,6 +641,68 @@ class Test {
             Assert.IsInstanceOf<This>(analyzer.Expression());
             Assert.IsInstanceOf<Null>(analyzer.Expression());
         }
+        
+        [Test]
+        public void test_interpolated_strings_empty()
+        {
+            Lexer lexer = new Lexer("``");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var exp = analyzer.Expression();
+            Assert.IsInstanceOf<InterpolatedString>(exp);
+            Assert.AreEqual(0, ((InterpolatedString)exp).values.Length);
+        }
+        
+        [Test]
+        public void test_interpolated_strings_only_text()
+        {
+            Lexer lexer = new Lexer("`This is text only`");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var exp = analyzer.Expression();
+            Assert.IsInstanceOf<InterpolatedString>(exp);
+            Assert.AreEqual(1, ((InterpolatedString)exp).values.Length);
+            Assert.IsInstanceOf<StringType>(exp.Children[0]);
+            Assert.AreEqual("This is text only", ((StringType)exp.Children[0]).value);
+        }
+        
+        [Test]
+        public void test_interpolated_strings_single_interpolation()
+        {
+            Lexer lexer = new Lexer("`2 + 3 = ${2 + 3}`");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var exp = analyzer.Expression();
+            Assert.IsInstanceOf<InterpolatedString>(exp);
+            Assert.AreEqual(2, ((InterpolatedString)exp).values.Length);
+            
+            Assert.IsInstanceOf<StringType>(exp.Children[0]);
+            Assert.AreEqual("2 + 3 = ", ((StringType)exp.Children[0]).value);
+            
+            Assert.IsInstanceOf<Add>(exp.Children[1]);
+            Assert.AreEqual(2, ((Number)((Add)exp.Children[1]).left).value);
+            Assert.AreEqual(3, ((Number)((Add)exp.Children[1]).right).value);
+        }
+        
+        [Test]
+        public void test_interpolated_strings_nested()
+        {
+            Lexer lexer = new Lexer("`x${`${1_000}`}d`");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var exp = analyzer.Expression();
+            Assert.IsInstanceOf<InterpolatedString>(exp);
+            Assert.AreEqual(3, ((InterpolatedString)exp).values.Length);
+            
+            Assert.IsInstanceOf<StringType>(exp.Children[0]);
+            Assert.AreEqual("x", ((StringType)exp.Children[0]).value);
+            
+            Assert.IsInstanceOf<InterpolatedString>(exp.Children[1]);
+            Assert.AreEqual(1000, ((Number)exp.Children[1][0]).value);
+            
+            Assert.IsInstanceOf<StringType>(exp.Children[2]);
+            Assert.AreEqual("d", ((StringType)exp.Children[2]).value);
+        }
 
         [Test]
         public void test_variables()

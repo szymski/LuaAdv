@@ -640,6 +640,36 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             else if (AcceptSymbol("..."))
                 return new Vararg(token);
 
+            return Expression_InterpolatedString();
+        }
+
+        Expression Expression_InterpolatedString()
+        {
+            if (AcceptToken<TokenInterpolatedStringStart>())
+            {
+                var start = token;
+                var expressions = new List<Expression>();
+
+                while (true)
+                {
+                    if (AcceptToken<TokenInterpolatedStringText>())
+                    {
+                        expressions.Add(new StringType(token, token.Value));
+                    }
+                    else if (AcceptToken<TokenInterpolatedStringEnd>())
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        var exp = Expression("Expression or interpolated string end '`' expected.");
+                        expressions.Add(exp);
+                    }
+                }
+
+                return new InterpolatedString(start, expressions.ToArray());
+            }
+            
             return Expression_Special();
         }
 

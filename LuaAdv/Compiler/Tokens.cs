@@ -24,6 +24,12 @@ namespace LuaAdv.Compiler
     public class TokenSymbol : Token { }
 
     public class TokenString : Token { }
+    
+    public class TokenInterpolatedStringStart : Token { }
+    
+    public class TokenInterpolatedStringText : Token { }
+    
+    public class TokenInterpolatedStringEnd : Token { }
 
     public class TokenNumber : Token
     {

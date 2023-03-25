@@ -16,6 +16,9 @@ namespace LuaAdv.Compiler.Lexer
         char currentChar = '\0';
         string currentLine = "";
         Match patternMatch = null;
+        
+        private bool insideInterpolatedString = false;
+        private int interpolatedStringDepth = 0;
 
         struct PatternMatchSave
         {
@@ -51,6 +54,12 @@ namespace LuaAdv.Compiler.Lexer
 
             currentChar = currentLine[character];
             return true;
+        }
+
+        void PrevChar()
+        {
+            character--;
+            currentChar = currentLine[character];
         }
 
         bool NextLine()
@@ -114,6 +123,11 @@ namespace LuaAdv.Compiler.Lexer
             patternMatch = save.patternMatch;
         }
 
+        void PushToken(Token token, string value)
+        {
+            PushToken(token, value, line, patternStack.Last().position, line, line + value.Length);   
+        }
+
         void PushToken(Token token, string value, int line, int character, int endLine, int endCharacter)
         {
             token.Value = value;
@@ -125,11 +139,6 @@ namespace LuaAdv.Compiler.Lexer
             token.EndCharacter = endCharacter;
 
             Output.Add(token);
-        }
-
-        void PushToken(Token token, string value)
-        {
-            PushToken(token, value, line, patternStack.Last().position, line, line + value.Length);   
         }
 
         void ThrowException(string message)

@@ -403,5 +403,12 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
         {
             return new Sequence(null, node.classSequence);
         }
+        
+        public override Node Visit(InterpolatedString node)
+        {
+            node.values = node.values.Select(x => (Expression)x.Accept(this)).ToArray();
+            var concatenated = node.values.Reverse().Aggregate((a, b) => new Concat(b, b.Token, a));
+            return new GroupedEquation(node.Token, concatenated);
+        }
     }
 }
