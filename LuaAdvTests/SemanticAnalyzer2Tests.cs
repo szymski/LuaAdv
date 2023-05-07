@@ -318,5 +318,36 @@ namespace LuaAdvTests
             Assert.IsInstanceOfType(group[0][1][1], typeof(StringType));
             Assert.AreEqual(", right?", ((StringType)group[0][1][1]).value);
         }
+        
+        [TestMethod]
+        public void test_table_item_traversal()
+        {
+            var analyzer = Analyze("""
+                var tbl = {
+                    1,
+                    1 + 1,
+                    three = () => 3,
+                };
+            """);
+            var table = analyzer.MainNode[0][0][0] as Table;
+            Assert.IsInstanceOfType<Table>(table);
+            
+            Assert.IsNull(table[0]);
+            Assert.IsInstanceOfType<Number>(table[1]);
+            Assert.AreEqual(1, ((Number)table[1]).value);
+            
+            Assert.IsNull(table[2]);
+            Assert.IsInstanceOfType<Number>(table[3]);
+            Assert.AreEqual(2, ((Number)table[3]).value);
+            
+            Assert.IsInstanceOfType<Variable>(table[4]);
+            Assert.AreEqual("three", ((Variable)table[4]).name);
+            Assert.IsInstanceOfType<AnonymousLambdaFunction>(table[5]);
+            Assert.AreEqual(0, ((AnonymousLambdaFunction)table[5]).parameterList.Count);
+
+            var funcExpr = ((AnonymousLambdaFunction)table[5]).expression;
+            Assert.IsInstanceOfType<Number>(funcExpr);
+            Assert.AreEqual(3, ((Number)funcExpr).value);
+        }
     }
 }

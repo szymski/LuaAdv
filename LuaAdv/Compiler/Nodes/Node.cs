@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LuaAdv.Compiler.Nodes.Expressions;
+using LuaAdv.Compiler.Nodes.Statements;
 
 namespace LuaAdv.Compiler.Nodes
 {
@@ -26,6 +28,12 @@ namespace LuaAdv.Compiler.Nodes
         public virtual Node[] Children => null;
 
         public Node Accept(IAstVisitor visitor)
+        {
+            return visitor.Visit(this as dynamic);
+        }
+        
+        public T Accept<T>(IAstVisitor visitor)
+            where T : Node
         {
             return visitor.Visit(this as dynamic);
         }

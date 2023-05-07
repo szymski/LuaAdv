@@ -5,10 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace LuaAdvWatcher
-{
-    static class Program
-    {
+namespace LuaAdvWatcher {
+    static class Program {
         public const string ConfigFilename = ".lua_adv";
 
         /// <summary>
@@ -29,9 +27,11 @@ namespace LuaAdvWatcher
                 MessageBox.Show($"No file specified. Please open {ConfigFilename}.", "LuaAdv", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-
-            configFilename = args[0];
 #endif
+            if (args.Length >= 1)
+            {
+                configFilename = args[0];
+            }
 
             if (!File.Exists(configFilename))
             {

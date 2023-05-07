@@ -1,4 +1,7 @@
-﻿namespace LuaAdvWatcher
+﻿using System.Drawing;
+using System.Windows.Forms;
+
+namespace LuaAdvWatcher
 {
     partial class Form1
     {
@@ -36,23 +39,31 @@
             // 
             this.trayIcon.Text = "LuaAdv Watcher";
             this.trayIcon.Visible = true;
+            ///
+            /// richTextBox
+            ///
+            this.richTextBox = new RichTextBox();
+            this.Controls.Add(this.richTextBox);
+            this.richTextBox.Dock = DockStyle.Fill;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(263, 145);
-            this.Name = "Form1";
-            this.Text = "Form1";
+            this.ClientSize = new System.Drawing.Size(800, 600);
+            this.Name = "LuaAdv Watcher";
+            this.Text = "LuaAdv Watcher";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.Shown += new System.EventHandler(this.Form1_Shown);
-            this.ResumeLayout(false);
+            this.FormClosing += this.Form1_Closing;
+            this.ResumeLayout(true);
 
         }
 
         #endregion
 
         private System.Windows.Forms.NotifyIcon trayIcon;
+        private RichTextBox richTextBox;
     }
 }
 

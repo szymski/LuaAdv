@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LuaAdv.Compiler.SemanticAnalyzer1;
+﻿using LuaAdv.Compiler.SemanticAnalyzer1;
 
 namespace LuaAdv.Compiler.Nodes
 {
-    public class ScopeNode : Node
+    public class ScopeNode : Node, IScoped
     {
-        public Scope scope;
+        public Scope scope { get; set; }
         public Node node;
 
         public ScopeNode(Node node, Scope scope)
@@ -18,7 +13,7 @@ namespace LuaAdv.Compiler.Nodes
             this.scope = scope;
         }
 
-        public override Token Token { get; }
+        public override Token Token => node.Token;
 
         public override Node[] Children => new[] { node };
     }

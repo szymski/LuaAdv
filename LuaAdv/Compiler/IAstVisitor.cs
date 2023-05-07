@@ -126,6 +126,7 @@ namespace LuaAdv.Compiler
         Node Visit(Class node);
         Node Visit(ClassMethod node);
         Node Visit(ScopeNode node);
+        Node Visit(ScopeExpression node);
         Node Visit(CommentNode node);
         Node Visit(DocumentationCommentNode node);
         Node Visit(SpecialNode node);

@@ -15,10 +15,8 @@ using LuaAdv.Compiler.Nodes.Expressions.Unary.Post;
 using LuaAdv.Compiler.Nodes.Expressions.Unary.Pre;
 using LuaAdv.Compiler.Nodes.Math;
 
-namespace LuaAdv.Compiler.SyntaxAnalyzer
-{
-    public partial class SyntaxAnalyzer
-    {
+namespace LuaAdv.Compiler.SyntaxAnalyzer {
+    public partial class SyntaxAnalyzer {
         private string message = "Expression expected.";
         private bool errorOnNoExpression = false;
         private bool inTernary = false;
@@ -388,7 +386,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                     beforeExpression = exp;
                     var tempExp = Expression_SelfFunctionCall(exp);
                     exp = tempExp ?? exp;
-                    endedWithNamed = false; // TODO: I don't like this. Method call isn't a named variable. Move this somewhere else.
+                    endedWithNamed = false;// TODO: I don't like this. Method call isn't a named variable. Move this somewhere else.
 
                     // Ternary support
                     if (tempExp == null)
@@ -416,6 +414,22 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
                         return exp;
                     }
+                }
+                else if (!requireNamed && exp is Nodes.Expressions.NamedVariable or FunctionCall && AcceptString())
+                {
+                    var param = new StringType(token, token.Value);
+
+                    exp = new FunctionCall(exp, new Node[] { param });
+                    endedWithNamed = false;
+                }
+                else if (!requireNamed && exp is Nodes.Expressions.NamedVariable or FunctionCall && AcceptSymbol("{"))
+                {
+                    PrevToken();
+                    
+                    var param = Expression_Table();
+
+                    exp = new FunctionCall(exp, new Node[] { param });
+                    endedWithNamed = false;
                 }
                 else
                     break;
@@ -669,7 +683,7 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
 
                 return new InterpolatedString(start, expressions.ToArray());
             }
-            
+
             return Expression_Special();
         }
 
@@ -711,12 +725,37 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
                     }
                     else
                     {
+                        var prevIndex = tokenIndex;
+                        
                         if (AcceptIdentifier())
                         {
                             key = new StringType(token, token.Value);
 
-                            if (!AcceptSymbol("="))
+                            // Table function declaration "func(a, b) { ... }"
+                            if (AcceptSymbol("("))
+                            {
+                                var @params = FunctionParameterList();
+
+                                if (!AcceptSymbol(")") || !AcceptSymbol("{"))
+                                {
+                                    tokenIndex = prevIndex;
+                                }
+                                else
+                                {
+                                    PrevToken();
+                                    
+                                    var sequence = Block(false);
+                                    values.Add(new(key, new AnonymousFunction(key.Token, @params, sequence)));
+                                    
+                                    foundComma = AcceptSymbol(",");
+                                    
+                                    continue;
+                                }
+                            }
+                            // Key-less value "{1, "b", c, ...}"  
+                            else if (!AcceptSymbol("="))
                                 PrevToken();
+                            // Table value "key = value"
                             else
                             {
                                 var keyValue = Expression("Table value expected after '='.");

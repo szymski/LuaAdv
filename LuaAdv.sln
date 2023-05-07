@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LuaAdvAppTest", "LuaAdvAppT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LuaAdvWatcher", "LuaAdvWatcher\LuaAdvWatcher.csproj", "{4F904F4C-EDAC-4CF0-A8CA-6E74D0364AF7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LuaAdvCLI", "LuaAdvCLI\LuaAdvCLI.csproj", "{BFCB64ED-978B-483C-941E-142E7A5D34CF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{4F904F4C-EDAC-4CF0-A8CA-6E74D0364AF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F904F4C-EDAC-4CF0-A8CA-6E74D0364AF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4F904F4C-EDAC-4CF0-A8CA-6E74D0364AF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BFCB64ED-978B-483C-941E-142E7A5D34CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BFCB64ED-978B-483C-941E-142E7A5D34CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BFCB64ED-978B-483C-941E-142E7A5D34CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BFCB64ED-978B-483C-941E-142E7A5D34CF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

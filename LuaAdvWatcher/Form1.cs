@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -26,6 +27,7 @@ namespace LuaAdvWatcher {
 
         private Compiler _compiler = new Compiler();
         private ToolStripProgressBar _toolStripProgressBar;
+        private FileSystemWatcher _watcher;
 
         public Form1(string configFilename)
         {
@@ -50,13 +52,33 @@ namespace LuaAdvWatcher {
 
             _toolStripProgressBar = new() { Visible = false };
             context.Items.Add(_toolStripProgressBar);
-            context.Items.Add("Compile all", null, (o, args) => {
-                CompileAll();
-                HideProgressBar();
-            });
+            context.Items.Add(
+                "Compile all", null, (o, args) => {
+                    CompileAll();
+                    HideProgressBar();
+                }
+            );
             context.Items.Add("Generate documentation", null, (o, args) => GenerateDocumentation());
+            context.Items.Add(
+                "Show debug log", null, (o, args) => {
+                    Log("Showing...");
+                    Show();
+                }
+            );
+            context.Items.Add(
+                "Associate .lua_adv files", null, (o, args) => {
+                    if (OperatingSystem.IsWindows())
+                        FileAssociation.RegisterConfigFileAssociation();
+                    Log("Associated .lua_adv file format in registry");
+                }
+            );
             context.Items.Add(new ToolStripSeparator());
-            context.Items.Add("Exit", null, (o, args) => Close());
+            context.Items.Add(
+                "Exit", null, (o, args) => {
+                    this.FormClosing -= Form1_Closing;
+                    Application.Exit();
+                }
+            );
 
             trayIcon.ContextMenuStrip = context;
 
@@ -65,36 +87,51 @@ namespace LuaAdvWatcher {
 
         private void CreateWatcher()
         {
-            FileSystemWatcher watcher = new FileSystemWatcher(_inputDirectory);
-            watcher.NotifyFilter = NotifyFilters.LastWrite;
-            watcher.Filter = "*.lua*";// .luaa and .lua files
-            watcher.IncludeSubdirectories = true;
-            watcher.EnableRaisingEvents = true;
+            Log($"Creating file watcher in '{_inputDirectory}'");
+            _watcher = new(_inputDirectory);
+            _watcher.NotifyFilter = NotifyFilters.LastWrite;
+            _watcher.Filter = "*.lua*";// .luaa and .lua files
+            _watcher.IncludeSubdirectories = true;
+            _watcher.EnableRaisingEvents = true;
 
             DateTime lastCompile = DateTime.Now;
 
-            watcher.Changed += (sender, args) => {
+            // TODO: Handle file rename event - delete the old file from the output folder
+
+            _watcher.Error += (sender, args) => {
+                var exception = args.GetException();
+                Log($"File system watcher error: {exception.Message}");
+            };
+
+            _watcher.Changed += (sender, args) => {
+                Log($"File change detected for '{args.FullPath}'");
+
                 // trayIcon.ShowBalloonTip(3000, "Compiling...", $"Compiling file '{args.Name}'", ToolTipIcon.Info);
-                
+
                 // For some reason, files changes are reported twice, so we have to wait a while
                 if (DateTime.Now.Subtract(lastCompile).TotalSeconds < 0.5)
                     return;
-                
+
 
                 lastCompile = DateTime.Now;
 
-                ProcessFile(new FileInfo(args.FullPath));
+                Log($"Recompiling file '{args.FullPath}'...");
+                ProcessFile(new(args.FullPath));
             };
+
+            GC.KeepAlive(_watcher);
         }
 
         private void ParseConfig()
         {
+            Log($"Parsing config '{_configFilename}'...");
             var contents = File.ReadAllText(_configFilename);
             var obj = JObject.Parse(contents);
 
             string configFileDirectory = Path.GetDirectoryName(_configFilename);
 
             Directory.SetCurrentDirectory(configFileDirectory);
+            Log($"Set working directory to '{configFileDirectory}'");
 
             _inputDirectory = obj["input_dir"]?.Value<string>() ?? configFileDirectory;
             _outputDirectory = obj["output_dir"]?.Value<string>() ?? configFileDirectory;
@@ -111,11 +148,14 @@ namespace LuaAdvWatcher {
             _inputDirectory = Path.GetFullPath(_inputDirectory);
             _outputDirectory = Path.GetFullPath(_outputDirectory);
             _docsDirectory = Path.GetFullPath(_docsDirectory);
+
+            Log($"Input directory: '{_inputDirectory}'");
+            Log($"Output directory: '{_outputDirectory}'");
         }
 
         private bool CompileAll(string dir = null, int level = 0)
         {
-            if(level == 0)
+            if (level == 0)
                 InitProgressBar();
 
             if (dir == null)
@@ -186,7 +226,6 @@ namespace LuaAdvWatcher {
 
         private void InitProgressBar()
         {
-
             _toolStripProgressBar.Visible = true;
             _toolStripProgressBar.Maximum = 1;
             _toolStripProgressBar.Value = 0;
@@ -233,10 +272,12 @@ namespace LuaAdvWatcher {
                 try
                 {
                     contents = File.ReadAllText(file.FullName);
+                    Log("File read successfully");
                     break;
                 }
-                catch
+                catch (Exception e)
                 {
+                    Log($"Failed to read file '{file.FullName}': {e.Message}");
                     if (i == 0)
                         return false;
                 }
@@ -254,10 +295,12 @@ namespace LuaAdvWatcher {
                 catch (CompilerException e)
                 {
                     trayIcon.ShowBalloonTip(12000, $"{file.Name} {e.Line}:{e.Character}", e.Message, ToolTipIcon.Error);
+                    Log($"Failed to compile file '{file.FullName}' (Line {e.Line}): {e.Message}");
                     return false;
                 }
                 catch (Exception e)
                 {
+                    Log($"Failed to save compiled file '{file.FullName}': {e.Message}");
 #if DEBUG
                     throw e;
 #endif
@@ -312,6 +355,8 @@ namespace LuaAdvWatcher {
 
         private void WriteToFile(string path, string contents)
         {
+            Log($"Writing to '{path}' contents of '{contents.Length}' bytes");
+
             // Create the directory if doesn't exist
             if (!Directory.Exists(Path.GetDirectoryName(path)))
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
@@ -321,6 +366,24 @@ namespace LuaAdvWatcher {
 
         private void Form1_Shown(object sender, EventArgs e)
         {
+            Log("Form initialized, hiding...");
+            Hide();
+        }
+
+        private void Log(string text)
+        {
+            Console.WriteLine(text);
+            Invoke(
+                () => {
+                    richTextBox.AppendText($"[{DateTime.Now:G}] {text}\n");
+                }
+            );
+        }
+
+        private void Form1_Closing(object sender, FormClosingEventArgs e)
+        {
+            e.Cancel = true;
+            Log("Hiding...");
             Hide();
         }
     }

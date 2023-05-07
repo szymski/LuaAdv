@@ -741,6 +741,37 @@ class Test {
             Assert.IsInstanceOf<FunctionCall>(analyzer.Expression());
             Assert.IsInstanceOf<FunctionCall>(analyzer.Expression()[0][0]);
         }
+        
+        [Test]
+        public void test_function_call_without_parentheses()
+        {
+            Lexer lexer = new Lexer("""print "asd" ui.Panel{} test {} 1 2 3""");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var exp = analyzer.Expression();
+            Assert.IsInstanceOf<FunctionCall>(exp);
+            Assert.AreEqual(2, exp.Children.Length);
+            Assert.IsInstanceOf<Variable>(exp[0]);
+            Assert.AreEqual("print", ((Variable)exp[0]).name);
+            Assert.IsInstanceOf<StringType>(exp[1]);
+            Assert.AreEqual("asd", ((StringType)exp[1]).value);
+            
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<FunctionCall>(exp);
+            Assert.AreEqual(2, exp.Children.Length);
+            Assert.IsInstanceOf<TableDotIndex>(exp[0]);
+            Assert.AreEqual("Panel", ((TableDotIndex)exp[0]).index);
+            Assert.IsInstanceOf<Table>(exp[1]);
+            Assert.AreEqual(0, exp[1].Children.Length);
+
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<FunctionCall>(exp);
+            Assert.AreEqual(2, exp.Children.Length);
+            Assert.IsInstanceOf<Variable>(exp[0]);
+            Assert.AreEqual("test", ((Variable)exp[0]).name);
+            Assert.IsInstanceOf<Table>(exp[1]);
+            Assert.AreEqual(0, exp[1].Children.Length);
+        }
 
         [Test]
         public void test_method_call()
@@ -1052,17 +1083,43 @@ class Test {
         [Test]
         public void test_table()
         {
-            Lexer lexer = new Lexer("{ " +
-                                    "test = 123," +
-                                    "[123] = abc," +
-                                    "123, " +
-                                    "} ");
+            Lexer lexer = new Lexer("""
+                {
+                    test = 123,
+                    [123] = abc,
+                    123,
+                }
+                """);
             SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
 
             Expression exp;
 
             exp = analyzer.Expression();
             Assert.IsInstanceOf<Table>(exp);
+        }
+        
+        [Test]
+        public void test_table_function()
+        {
+            Lexer lexer = new Lexer("""
+                {
+                    Paint(pnl, w, h) {
+                        success();
+                    },
+                    Test(a),
+                    Test2(123),
+                }
+                """);
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            var exp = analyzer.Expression();
+            Assert.IsInstanceOf<Table>(exp);
+            Assert.IsInstanceOf<StringType>(exp[0]);
+            Assert.IsInstanceOf<AnonymousFunction>(exp[1]);
+            Assert.IsNull(exp[2]);
+            Assert.IsInstanceOf<FunctionCall>(exp[3]);
+            Assert.IsNull(exp[4]);
+            Assert.IsInstanceOf<FunctionCall>(exp[5]);
         }
 
         [Test]

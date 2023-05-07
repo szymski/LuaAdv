@@ -277,7 +277,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
             CurrentScope = previousScope;
 
-            return new ScopeNode(node, scope);
+            return new ScopeExpression(node, scope);
         }
 
         public override Node Visit(SingleEnum node)

@@ -112,8 +112,8 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer
             requiresNamedVariable = before;
 
             foreach (var expression in expList)
-                if (expression is NamedVariable)
-                    list.Add((NamedVariable) expression);
+                if (expression is NamedVariable variable)
+                    list.Add(variable);
                 else
                 {
                     if (returnNullIfNotNamed)

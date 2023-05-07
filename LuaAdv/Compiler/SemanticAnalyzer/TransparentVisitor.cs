@@ -50,6 +50,16 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
 
             return node;
         }
+        
+        public virtual Node Visit(ScopeExpression node)
+        {
+            var oldScope = CurrentScope;
+            CurrentScope = node.scope;
+            node.expression = node.expression.Accept<Expression>(this);
+            CurrentScope = oldScope;
+
+            return node;
+        }
 
         #endregion
 
@@ -568,9 +578,8 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
         {
             for (int i = 0; i < node.values.Length; i++)
             {
-                // TODO: Convert expressions to nodes.
                 var key = node.values[i];
-                node.values[i] = new Tuple<Expression, Expression>(key.Item1 != null ? (Expression)key.Item1.Accept(this) : null, key.Item2?.Accept(this) as Expression);
+                node.values[i] = new Tuple<Expression, Expression>(key.Item1 is not null ? (Expression)key.Item1.Accept(this) : null, (Expression)key.Item2?.Accept(this));
             }
 
             return node;

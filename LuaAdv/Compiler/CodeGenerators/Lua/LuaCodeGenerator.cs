@@ -106,6 +106,16 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             return node;
         }
 
+        public Node Visit(ScopeExpression node)
+        {
+            var oldScope = CurrentScope;
+            CurrentScope = node.scope;
+            node.expression.Accept(this);
+            CurrentScope = oldScope;
+
+            return node;
+        }
+
         public ScopeNode PushScope(Node innerNode)
         {
             return new ScopeNode(innerNode, new Scope(CurrentScope));
@@ -117,7 +127,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
         {
             // TODO: Rewrite to use Lua for loop
 
-            //Node init = node.init;
+            //Node init = expression.init;
 
             //if (init is LocalVariablesDeclaration)
             //{
@@ -891,10 +901,10 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(AnonymousFunction node)
         {
-            //foreach (var defExp in node.parameterList.Select(d => d.Item3).Where(d => d != null))
+            //foreach (var defExp in expression.parameterList.Select(d => d.Item3).Where(d => d != null))
             //    defExp.Accept(this);
 
-            //node.sequence.Accept(this);
+            //expression.sequence.Accept(this);
 
             builder.Append("function(");
 
@@ -1050,6 +1060,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             {
                 if (key.Item1 != null)
                 {
+                    // TODO: Don't use tbl["key"] but tbl.key when key is a valid identifier string 
                     builder.Append("[");
                     key.Item1.Accept(this);
                     builder.Append("] = ");
