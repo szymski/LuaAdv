@@ -444,6 +444,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(StatementExpression node)
         {
+            // TODO: v = (a += 5) doesn't work - += 5 is ignored
             bool pushEntire = node.expression is FunctionCall || node.expression is MethodCall || node.expression is SuperCall;
 
             if (pushEntire)
@@ -579,6 +580,11 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             node.left.Accept(this);
 
             return node;
+        }
+
+        public Node Visit(NullCoalescingAssignmentOperator node)
+        {
+            throw new NotImplementedException();
         }
 
         public Node Visit(Bool node)
@@ -942,6 +948,7 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
 
         public Node Visit(AnonymousLambdaFunction node)
         {
+            Console.WriteLine("LuaCodeGenerator: AnonymousLambdaFunction node");
             // This is supposed to be lowered by the semantic analyser
 
             return node;

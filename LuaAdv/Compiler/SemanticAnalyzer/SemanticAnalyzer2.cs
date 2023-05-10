@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 using LuaAdv.Compiler.Nodes;
 using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Expressions.Assignment;
@@ -13,17 +14,29 @@ using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
 using LuaAdv.Compiler.SemanticAnalyzer1;
 
-namespace LuaAdv.Compiler.SemanticAnalyzer
-{
+namespace LuaAdv.Compiler.SemanticAnalyzer {
     /// <summary>
     /// Does lowering (replaces complex nodes with simpler ones) and validates correctness.
     /// </summary>
-    public class SemanticAnalyzer2 : TransparentVisitor
-    {
+    public class SemanticAnalyzer2 : TransparentVisitor, IAstVisitorProxy {
         public string FileName { get; set; } = "";
 
         public SemanticAnalyzer2(Node mainNode) : base(mainNode)
         {
+        }
+
+        public Node ProxyBefore(Node node)
+        {
+            return node;
+        }
+
+        public Node ProxyAfter(Node node)
+        {
+            if (node is ILowered)
+            {
+                throw new Exception($"{nameof(ILowered)} node '{node.GetType()}' exited SemanticAnalyzer2. Such nodes should be lowered into simpler ones before next stage.");
+            }
+            return node;
         }
 
         public override Node Visit(StatementLambdaFunctionDeclaration node)
@@ -91,8 +104,10 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                 }
 
                 var methodDeclaration =
-                    new StatementMethodDeclaration(node.Token /* TODO: This should be a function token */,
-                        new Variable(node.Token, $"C{node.name}"), method.Item1, method.Item2.ToList() /* TODO: This should be an array */, method.Item3);
+                    new StatementMethodDeclaration(
+                        node.Token/* TODO: This should be a function token */,
+                        new Variable(node.Token, $"C{node.name}"), method.Item1, method.Item2.ToList()/* TODO: This should be an array */, method.Item3
+                    );
                 var methodNode = new ClassMethod(node, methodDeclaration);
 
                 sequenceNodes.Add(methodNode);
@@ -104,7 +119,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             foreach (var field in node.fields.Where(f => f.Item2 != null))
             {
-                var initializerNode = new StatementExpression(new ValueAssignmentOperator(new TableDotIndex(new This(null), null, field.Item1), null, field.Item2)); // TODO: Null tokens could be replaced with a special class.
+                var initializerNode = new StatementExpression(new ValueAssignmentOperator(new TableDotIndex(new This(null), null, field.Item1), null, field.Item2));// TODO: Null tokens could be replaced with a special class.
                 initializerNodes.Add(initializerNode);
             }
 
@@ -112,7 +127,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             {
                 if (node.baseClass != null)
                     initializerNodes.Insert(0, new StatementExpression(new SuperCall(null, new Expression[0])));
-                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>("__this", new Tuple<Token, string, Expression>[0], new Sequence(null, initializerNodes.ToArray()), null); // TODO: Create scope for implicit constructor
+                constructorMethod = new Tuple<string, Tuple<Token, string, Expression>[], Node, TokenDocumentationComment>("__this", new Tuple<Token, string, Expression>[0], new Sequence(null, initializerNodes.ToArray()), null);// TODO: Create scope for implicit constructor
             }
             else
             {
@@ -121,8 +136,10 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
             }
 
             var constructorDeclaration =
-                new StatementMethodDeclaration(node.Token /* TODO: This should be a function token */,
-                    new Variable(node.Token, $"C{node.name}"), constructorMethod.Item1, constructorMethod.Item2.ToList(), constructorMethod.Item3);
+                new StatementMethodDeclaration(
+                    node.Token/* TODO: This should be a function token */,
+                    new Variable(node.Token, $"C{node.name}"), constructorMethod.Item1, constructorMethod.Item2.ToList(), constructorMethod.Item3
+                );
             var constructorNode = new ClassMethod(node, constructorDeclaration);
 
             var constructorScope = new Scope(CurrentScope);
@@ -236,16 +253,16 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             return (node.left, node.right) switch
             {
-                    (Number left, Number right) => new Bool(node.Token, Math.Abs(left.value - right.value) <= Number.EPSILON),
-                    (Bool left, Bool right) => new Bool(node.Token, left.value == right.value),
-                    (StringType left, StringType right) => new Bool(node.Token, left.value == right.value),
-                    (Null left, Null right) => new Bool(node.Token, true),
-                    (Null left, BasicType right) => new Bool(node.Token, false),
-                    (BasicType left, Null right) => new Bool(node.Token, false),
+                (Number left, Number right) => new Bool(node.Token, Math.Abs(left.value - right.value) <= Number.EPSILON),
+                (Bool left, Bool right) => new Bool(node.Token, left.value == right.value),
+                (StringType left, StringType right) => new Bool(node.Token, left.value == right.value),
+                (Null left, Null right) => new Bool(node.Token, true),
+                (Null left, BasicType right) => new Bool(node.Token, false),
+                (BasicType left, Null right) => new Bool(node.Token, false),
                 _ => node,
             };
         }
-        
+
         public override Node Visit(NotEquals node)
         {
             node.left = node.left.Accept(this);
@@ -256,7 +273,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
 
             if (equalNode is Bool b)
                 return new Bool(b.Token, !b.value);
-            
+
             return node;
         }
 
@@ -272,7 +289,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                 _ => node
             };
         }
-        
+
         public override Node Visit(Add node)
         {
             node.left = node.left.Accept(this);
@@ -371,7 +388,7 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
                 var decoratorCall = new FunctionCall(decoratorConstructorCall, new Node[] { anonymousFunc });
                 Node newNode;
                 if (func.local)
-                    newNode = new LocalVariablesDeclaration(new [] {new Tuple<Token, string>(func.name.Token, ((Variable)func.name).name) }, new []{ decoratorCall });
+                    newNode = new LocalVariablesDeclaration(new[] { new Tuple<Token, string>(func.name.Token, ((Variable)func.name).name) }, new[] { decoratorCall });
                 else
                     newNode = new StatementExpression(new ValueAssignmentOperator(func.name, node.token, decoratorCall));
 
@@ -403,12 +420,24 @@ namespace LuaAdv.Compiler.SemanticAnalyzer
         {
             return new Sequence(null, node.classSequence);
         }
-        
+
         public override Node Visit(InterpolatedString node)
         {
             node.values = node.values.Select(x => (Expression)x.Accept(this)).ToArray();
             var concatenated = node.values.Reverse().Aggregate((a, b) => new Concat(b, b.Token, a));
             return new GroupedEquation(node.Token, concatenated);
+        }
+        
+        public override Node Visit(NullCoalescingAssignmentOperator node)
+        {
+            var variable = (Expression)node.left.Accept(this);
+            var value = (Expression)node.right.Accept(this);
+
+            var condition = new NotEquals(variable, node.Token, new Null(node.Token));
+            var ternary = new Ternary(condition, variable, value);
+            var newNode = new ValueAssignmentOperator(variable, node.Token, ternary);
+
+            return newNode;
         }
     }
 }

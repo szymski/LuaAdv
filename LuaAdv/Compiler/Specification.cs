@@ -96,7 +96,8 @@ namespace LuaAdv.Compiler
 		
             { "?", "ternary" },
             { ":", "colon" },
-            { "??", "null propagation" },
+            { "??", "null-coalescing" },
+            { "??=", "null-coalescing assignment" },
             { ";", "semicolon" },
             { ",", "comma" },
             { "#", "length" },

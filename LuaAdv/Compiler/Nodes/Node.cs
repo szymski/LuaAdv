@@ -29,13 +29,35 @@ namespace LuaAdv.Compiler.Nodes
 
         public Node Accept(IAstVisitor visitor)
         {
-            return visitor.Visit(this as dynamic);
+            var node = this;
+            if (visitor is IAstVisitorProxy proxy)
+            {
+                node = proxy.ProxyBefore(node);
+                node = visitor.Visit(node as dynamic);
+                node = proxy.ProxyAfter(node);
+                return node;
+            }
+            else
+            {
+                return visitor.Visit(node as dynamic);
+            }
         }
         
         public T Accept<T>(IAstVisitor visitor)
             where T : Node
         {
-            return visitor.Visit(this as dynamic);
+            var node = this;
+            if (visitor is IAstVisitorProxy proxy)
+            {
+                node = proxy.ProxyBefore(node);
+                node = visitor.Visit(node as dynamic);
+                node = proxy.ProxyAfter(node);
+                return (T)node;
+            }
+            else
+            {
+                return visitor.Visit(node as dynamic);
+            }
         }
 
         public Node this[int key] => Children[key];

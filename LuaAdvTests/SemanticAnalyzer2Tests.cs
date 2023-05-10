@@ -2,7 +2,9 @@
 using LuaAdv.Compiler.Lexer;
 using LuaAdv.Compiler.Nodes;
 using LuaAdv.Compiler.Nodes.Expressions;
+using LuaAdv.Compiler.Nodes.Expressions.Assignment;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
+using LuaAdv.Compiler.Nodes.Expressions.Comparison;
 using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
 using LuaAdv.Compiler.SemanticAnalyzer;
@@ -340,14 +342,43 @@ namespace LuaAdvTests
             Assert.IsInstanceOfType<Number>(table[3]);
             Assert.AreEqual(2, ((Number)table[3]).value);
             
-            Assert.IsInstanceOfType<Variable>(table[4]);
-            Assert.AreEqual("three", ((Variable)table[4]).name);
-            Assert.IsInstanceOfType<AnonymousLambdaFunction>(table[5]);
-            Assert.AreEqual(0, ((AnonymousLambdaFunction)table[5]).parameterList.Count);
+            Assert.IsInstanceOfType<StringType>(table[4]);
+            Assert.AreEqual("three", ((StringType)table[4]).value);
+            Assert.IsInstanceOfType<AnonymousFunction>(table[5][0]);
+            Assert.AreEqual(0, ((AnonymousFunction)table[5][0]).parameterList.Count);
 
-            var funcExpr = ((AnonymousLambdaFunction)table[5]).expression;
+            var funcExpr = table[5][0][0][0][0];
             Assert.IsInstanceOfType<Number>(funcExpr);
             Assert.AreEqual(3, ((Number)funcExpr).value);
+        }
+
+        [TestMethod]
+        public void test_null_coalescing_assignment_lowering()
+        {
+            var analyzer = Analyze(
+                """
+                test ??= 1;
+            """
+            );
+            
+            Assert.IsInstanceOfType<ValueAssignmentOperator>(analyzer.MainNode[0][0][0]);
+            
+            var table = analyzer.MainNode[0][0][0][0] as Variable;
+            Assert.IsInstanceOfType<Variable>(table);
+            
+            var ternary = analyzer.MainNode[0][0][0][1] as Ternary;
+            Assert.IsInstanceOfType<Ternary>(ternary);
+            
+            Assert.IsInstanceOfType<NotEquals>(ternary[0]);
+            Assert.IsInstanceOfType<Variable>(ternary[0][0]);
+            Assert.AreEqual("test", ((Variable)ternary[0][0]).name);
+            Assert.IsInstanceOfType<Null>(ternary[0][1]);
+
+            Assert.IsInstanceOfType<Variable>(ternary[1]);
+            Assert.AreEqual("test", ((Variable)ternary[1]).name);
+            
+            Assert.IsInstanceOfType<Number>(ternary[2]);
+            Assert.AreEqual(1, ((Number)ternary[2]).value);
         }
     }
 }

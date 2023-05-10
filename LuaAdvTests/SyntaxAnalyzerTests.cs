@@ -1179,7 +1179,8 @@ class Test {
                                     "a *= 10 " +
                                     "a /= 10 " +
                                     "a %= 10 " +
-                                    "a ..= 10 ");
+                                    "a ..= 10 " +
+                                    "a ??= {}");
             SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
 
             Expression exp;
@@ -1204,8 +1205,24 @@ class Test {
 
             exp = analyzer.Expression();
             Assert.IsInstanceOf<ConcatAssignmentOperator>(exp);
+            
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<NullCoalescingAssignmentOperator>(exp);
 
             Assert.Throws<SyntaxAnalyzerException>(() => Compile("5 += 10"));
+        }
+        
+        [Test]
+        public void test_null_coalescing_assignment_grouped()
+        {
+            Lexer lexer = new Lexer("(A.s ??= {});");
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            Expression exp;
+
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<GroupedEquation>(exp);
+            Assert.IsInstanceOf<NullCoalescingAssignmentOperator>(exp[0]);
         }
 
         [Test]

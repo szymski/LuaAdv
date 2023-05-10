@@ -8,7 +8,10 @@ using LuaAdv.Compiler.Nodes.Statements;
 
 namespace LuaAdv.Compiler.Nodes.Expressions
 {
-    public class AnonymousLambdaFunction : Expression
+    /// <summary>
+    /// Lowered to AnonymousFunction in SemanticAnalyzer2.
+    /// </summary>
+    public class AnonymousLambdaFunction : Expression, ILowered
     {
         public Token funcToken;
         public List<Tuple<Token, string, Expression>> parameterList;

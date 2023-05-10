@@ -346,6 +346,13 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer {
                 var valueExp = Expression();
                 return new ConcatAssignmentOperator(exp, operatorToken, valueExp);
             }
+            else if (AcceptSymbol("??="))
+            {
+                var operatorToken = token;
+                EnsureNamed(exp);
+                var valueExp = Expression();
+                return new NullCoalescingAssignmentOperator(exp, operatorToken, valueExp);
+            }
 
             return exp;
         }

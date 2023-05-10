@@ -59,6 +59,7 @@ namespace LuaAdv.Compiler
         Node Visit(DivideAssignmentOperator node);
         Node Visit(ModuloAssignmentOperator node);
         Node Visit(ConcatAssignmentOperator node);
+        Node Visit(NullCoalescingAssignmentOperator node);
 
         // Basic types
         Node Visit(Bool node);
