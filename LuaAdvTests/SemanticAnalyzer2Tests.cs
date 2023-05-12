@@ -353,6 +353,31 @@ namespace LuaAdvTests
         }
 
         [TestMethod]
+        public void test_null_coalescing_lowering()
+        {
+            var analyzer = Analyze(
+                """
+                print(test ?? {});
+            """
+            );
+
+            var func = analyzer.MainNode[0][0][0];
+            Assert.IsInstanceOfType<FunctionCall>(func);
+            
+            Assert.IsInstanceOfType<Ternary>(func[1]);
+            
+            Assert.IsInstanceOfType<NotEquals>(func[1][0]);
+            Assert.IsInstanceOfType<Variable>(func[1][0][0]);
+            Assert.AreEqual("test", ((Variable)func[1][0][0]).name);
+            Assert.IsInstanceOfType<Null>(func[1][0][1]);
+            
+            Assert.IsInstanceOfType<Variable>(func[1][1]);
+            Assert.AreEqual("test", ((Variable)func[1][1]).name);
+            
+            Assert.IsInstanceOfType<Table>(func[1][2]);
+        }
+
+        [TestMethod]
         public void test_null_coalescing_assignment_lowering()
         {
             var analyzer = Analyze(

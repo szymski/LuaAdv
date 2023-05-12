@@ -427,7 +427,18 @@ namespace LuaAdv.Compiler.SemanticAnalyzer {
             var concatenated = node.values.Reverse().Aggregate((a, b) => new Concat(b, b.Token, a));
             return new GroupedEquation(node.Token, concatenated);
         }
-        
+
+        public override Node Visit(NullPropagation node)
+        {
+            var variable = (Expression)node.left.Accept(this);
+            var value = (Expression)node.right.Accept(this);
+            
+            var condition = new NotEquals(variable, node.Token, new Null(node.Token));
+            var ternary = new Ternary(condition, variable, value);
+
+            return ternary;
+        }
+
         public override Node Visit(NullCoalescingAssignmentOperator node)
         {
             var variable = (Expression)node.left.Accept(this);

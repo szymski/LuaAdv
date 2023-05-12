@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace LuaAdv.Compiler.Nodes.Expressions
 {
-    public class NullPropagation : TwoSideOperator
+    public class NullPropagation : TwoSideOperator, ILowered
     {
         public NullPropagation(Expression left, Token token, Expression right) : base(left, token, right)
         {
