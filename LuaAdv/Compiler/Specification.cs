@@ -98,6 +98,7 @@ namespace LuaAdv.Compiler
             { ":", "colon" },
             { "??", "null-coalescing" },
             { "??=", "null-coalescing assignment" },
+            { "?.", "optional chaining" },
             { ";", "semicolon" },
             { ",", "comma" },
             { "#", "length" },

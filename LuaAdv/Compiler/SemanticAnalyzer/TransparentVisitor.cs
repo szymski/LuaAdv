@@ -600,6 +600,13 @@ namespace LuaAdv.Compiler.SemanticAnalyzer1
             return node;
         }
 
+        public virtual Node Visit(TableOptionalChainingDotIndex node)
+        {
+            node.table = (Expression)node.table.Accept(this);
+
+            return node;
+        }
+
         public virtual Node Visit(TableIndex node)
         {
             node.table = (Expression)node.table.Accept(this);

@@ -23,5 +23,11 @@ namespace LuaAdv.Compiler.Nodes.Expressions
         public override Node[] Children => new Node[] { left, right };
 
         public override string ReturnType => "?";
+
+        public void Deconstruct(out Node left, out Node right)
+        {
+            left = this.left;
+            right = this.right;
+        }
     }
 }

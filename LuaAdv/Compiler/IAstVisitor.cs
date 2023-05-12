@@ -114,6 +114,7 @@ namespace LuaAdv.Compiler
         Node Visit(ShiftRight node);
         Node Visit(Table node);
         Node Visit(TableDotIndex node);
+        Node Visit(TableOptionalChainingDotIndex node);
         Node Visit(TableIndex node);
         Node Visit(Ternary node);
         Node Visit(Variable node);

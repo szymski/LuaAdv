@@ -21,5 +21,12 @@ namespace LuaAdv.Compiler.Nodes.Expressions
         public override Node[] Children => new Node[] {conditionExpression, expression1, expression2};
 
         public override string ReturnType => "?";
+
+        public void Deconstruct(out Expression conditionExpression, out Expression expression1, out Expression expression2)
+        {
+            conditionExpression = this.conditionExpression;
+            expression1 = this.expression1;
+            expression2 = this.expression2;
+        }
     }
 }

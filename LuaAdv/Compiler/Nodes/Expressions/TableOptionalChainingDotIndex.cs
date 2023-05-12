@@ -2,12 +2,12 @@ using System;
 
 namespace LuaAdv.Compiler.Nodes.Expressions.BasicTypes
 {
-    public class TableDotIndex : NamedVariable
+    public class TableOptionalChainingDotIndex : NamedVariable, ILowered
     {
         public Expression table;
         public string index;
 
-        public TableDotIndex(Expression table, Token indexToken, string index)
+        public TableOptionalChainingDotIndex(Expression table, Token indexToken, string index)
         {
             this.table = table;
             this.Token = indexToken;
@@ -19,11 +19,5 @@ namespace LuaAdv.Compiler.Nodes.Expressions.BasicTypes
         public override Node[] Children => new Node[] { table };
 
         public override string ReturnType => "?";
-
-        public void Deconstruct(out Expression table, out string index)
-        {
-            table = this.table;
-            index = this.index;
-        }
     }
 }

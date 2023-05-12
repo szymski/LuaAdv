@@ -1092,6 +1092,11 @@ namespace LuaAdv.Compiler.CodeGenerators.Lua
             return node;
         }
 
+        public Node Visit(TableOptionalChainingDotIndex node)
+        {
+            return node;
+        }
+
         public Node Visit(TableIndex node)
         {
             node.table.Accept(this);

@@ -5,6 +5,7 @@ using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Expressions.Assignment;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
 using LuaAdv.Compiler.Nodes.Expressions.Comparison;
+using LuaAdv.Compiler.Nodes.Expressions.Logical;
 using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
 using LuaAdv.Compiler.SemanticAnalyzer;
@@ -404,6 +405,97 @@ namespace LuaAdvTests
             
             Assert.IsInstanceOfType<Number>(ternary[2]);
             Assert.AreEqual(1, ((Number)ternary[2]).value);
+        }
+        
+        [TestMethod]
+        public void test_negative_number_equation_lowering()
+        {
+            var analyzer = Analyze(
+                """
+                x = 1 - 2 + 3;
+            """
+            );
+            
+            Assert.IsInstanceOfType<ValueAssignmentOperator>(analyzer.MainNode[0][0][0]);
+            
+            var value = analyzer.MainNode[0][0][0][0] as Number;
+            Assert.IsInstanceOfType<Number>(value);
+            Assert.AreEqual(2, value.value);
+        }
+        
+        [TestMethod]
+        public void test_optional_chaining_lowering_1()
+        {
+            var analyzer = Analyze(
+                """
+                print(a?.b);
+                // print(a ? : a.b : null);
+                // print(a and a.b or nil);
+            """
+            );
+
+            var printFn = analyzer.MainNode[0][0][0];
+            Assert.IsInstanceOfType<FunctionCall>(printFn);
+
+            Assert.That.IsType(out GroupedEquation group, printFn[1]);
+            Assert.That.IsType(out Ternary ternary, group[0]);
+
+            var (cond, a, b) = ternary;
+            
+            Assert.IsInstanceOfType<Variable>(cond);
+            Assert.AreEqual("a", ((Variable)cond).name);
+            
+            Assert.IsInstanceOfType<TableDotIndex>(a);
+            Assert.AreEqual("a", ((Variable)a[0]).name);
+            Assert.AreEqual("b", ((TableDotIndex)a).index);
+
+            Assert.IsInstanceOfType<Null>(b);
+        }
+        
+        [TestMethod]
+        public void test_optional_chaining_lowering_2()
+        {
+            var analyzer = Analyze(
+                """
+                print(a?.b?.c);
+                // print((a ? : a.b : null) ? a.b.c : null);
+                // print(a && a.b ? a.b.c : null);
+                // print((a and a.b) and a.b.c or nil);
+
+                print(a?.b?.c?.d);
+                // print(((a ? a.b : null) ? : a.b.c : null) ? a.b.c.d : null);
+                // print(a && a.b && a.b.c ? a.b.c.d : null);
+            """
+            );
+
+            var printFn = analyzer.MainNode[0][0][0];
+            Assert.IsInstanceOfType<FunctionCall>(printFn);
+
+            Assert.That.IsType(out GroupedEquation group, printFn[1]);
+            Assert.That.IsType(out Ternary ternary, group[0]);
+            var (cond, a, b) = ternary;
+            
+            // Condition
+            
+            Assert.That.IsType(out LogicalAnd and, cond);
+            
+            Assert.That.IsVariable(and.left, "a");
+            
+            Assert.That.IsType(out TableDotIndex right, and.right);
+            Assert.AreEqual("b", right.index);
+            Assert.That.IsVariable(right.table, "a");
+
+            // A
+            
+            Assert.That.IsType(out TableDotIndex value, a);
+            Assert.AreEqual("c", value.index);
+            Assert.That.IsType(out TableDotIndex tbl1, value.table);
+            Assert.AreEqual("b", tbl1.index);
+            Assert.That.IsType(out TableDotIndex tbl2, tbl1.table);
+            Assert.AreEqual("a", tbl2.index);
+
+            // B
+            Assert.That.IsType(out Null _, b);
         }
     }
 }

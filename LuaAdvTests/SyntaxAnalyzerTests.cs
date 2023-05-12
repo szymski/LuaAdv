@@ -1169,6 +1169,34 @@ class Test {
             exp = analyzer.Expression();
             Assert.IsInstanceOf<NullPropagation>(exp);
         }
+        
+        [Test]
+        public void test_optional_chaining()
+        {
+            Lexer lexer = new Lexer("""
+                a?.b
+                a?.b?.c?.d
+                """);
+            SyntaxAnalyzer analyzer = new SyntaxAnalyzer(lexer.Output, true);
+
+            Expression exp;
+
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<TableOptionalChainingDotIndex>(exp);
+            Assert.IsInstanceOf<Variable>(exp[0]);
+            Assert.AreEqual("a", ((Variable)exp[0]).name);
+            Assert.AreEqual("b", ((TableOptionalChainingDotIndex)exp).index);
+            
+            exp = analyzer.Expression();
+            Assert.IsInstanceOf<TableOptionalChainingDotIndex>(exp);
+            Assert.AreEqual("d", ((TableOptionalChainingDotIndex)exp).index);
+            Assert.IsInstanceOf<TableOptionalChainingDotIndex>(exp[0]);
+            Assert.AreEqual("c", ((TableOptionalChainingDotIndex)exp[0]).index);
+            Assert.IsInstanceOf<TableOptionalChainingDotIndex>(exp[0][0]);
+            Assert.AreEqual("b", ((TableOptionalChainingDotIndex)exp[0][0]).index);
+            Assert.IsInstanceOf<Variable>(exp[0][0][0]);
+            Assert.AreEqual("a", ((Variable)exp[0][0][0]).name);
+        }
 
         [Test]
         public void test_assignment_operators()

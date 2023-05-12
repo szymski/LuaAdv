@@ -299,7 +299,7 @@ namespace LuaAdvTests
         [TestMethod]
         public void test_symbols()
         {
-            Lexer lexer = new Lexer("!!>=<<(){=>??..=??=");
+            Lexer lexer = new Lexer("!!>=<<(){=>??..=?.??=");
 
             int id = 0;
 
@@ -341,6 +341,10 @@ namespace LuaAdvTests
             
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenSymbol));
             Assert.AreEqual(lexer.Output[id].Value, "..=");
+            id++;
+            
+            Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenSymbol));
+            Assert.AreEqual(lexer.Output[id].Value, "?.");
             id++;
             
             Assert.IsInstanceOfType(lexer.Output[id], typeof(TokenSymbol));

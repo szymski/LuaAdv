@@ -208,6 +208,19 @@ namespace LuaAdv.Compiler.SemanticAnalyzer {
             return node;
         }
 
+        public override Node Visit(TableOptionalChainingDotIndex node)
+        {
+            node.table = (Expression)node.table.Accept(this);
+
+            var cond = node.table;
+            var then = new TableDotIndex(node.table, node.Token, node.index);
+            var @else = new Null(node.Token);
+            var ternary = new Ternary(cond, then, @else);
+            var newNode = new GroupedEquation(node.Token, ternary);
+
+            return newNode;
+        }
+
         public override Node Visit(SingleEnum node)
         {
             return new NullStatement(node.Token);

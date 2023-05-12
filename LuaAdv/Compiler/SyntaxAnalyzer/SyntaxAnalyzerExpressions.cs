@@ -387,6 +387,13 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer {
                     beforeTokenIndex = tokenIndex;
                     beforeExpression = exp;
                 }
+                else if (AcceptSymbol("?."))
+                {
+                    exp = Expression_TableDotIndexOptional(exp);
+                    endedWithNamed = true;
+                    beforeTokenIndex = tokenIndex;
+                    beforeExpression = exp;
+                }
                 else if (AcceptSymbol(":"))
                 {
                     beforeTokenIndex = tokenIndex - 1;
@@ -463,6 +470,16 @@ namespace LuaAdv.Compiler.SyntaxAnalyzer {
             RequireIdentifier("Table index expected.");
 
             return new TableDotIndex(exp, token, token.Value);
+        }
+
+        /// <summary>
+        /// Assumes the optional chaining symbol '?.' has been already parsed.
+        /// </summary>
+        private Expression Expression_TableDotIndexOptional(Expression exp)
+        {
+            RequireIdentifier("Table index expected.");
+
+            return new TableOptionalChainingDotIndex(exp, token, token.Value);
         }
 
         /// <summary>
