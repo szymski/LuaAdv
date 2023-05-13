@@ -5,6 +5,7 @@ using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Expressions.Assignment;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
 using LuaAdv.Compiler.Nodes.Expressions.Comparison;
+using LuaAdv.Compiler.Nodes.Expressions.Conditional;
 using LuaAdv.Compiler.Nodes.Expressions.Logical;
 using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
@@ -477,7 +478,7 @@ namespace LuaAdvTests
             
             // Condition
             
-            Assert.That.IsType(out LogicalAnd and, cond);
+            Assert.That.IsType(out ConditionalAnd and, cond);
             
             Assert.That.IsVariable(and.left, "a");
             
@@ -491,8 +492,7 @@ namespace LuaAdvTests
             Assert.AreEqual("c", value.index);
             Assert.That.IsType(out TableDotIndex tbl1, value.table);
             Assert.AreEqual("b", tbl1.index);
-            Assert.That.IsType(out TableDotIndex tbl2, tbl1.table);
-            Assert.AreEqual("a", tbl2.index);
+            Assert.That.IsVariable(tbl1.table, "a");
 
             // B
             Assert.That.IsType(out Null _, b);

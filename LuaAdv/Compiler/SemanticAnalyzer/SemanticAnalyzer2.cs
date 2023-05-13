@@ -9,6 +9,7 @@ using LuaAdv.Compiler.Nodes.Expressions;
 using LuaAdv.Compiler.Nodes.Expressions.Assignment;
 using LuaAdv.Compiler.Nodes.Expressions.BasicTypes;
 using LuaAdv.Compiler.Nodes.Expressions.Comparison;
+using LuaAdv.Compiler.Nodes.Expressions.Conditional;
 using LuaAdv.Compiler.Nodes.Expressions.Unary;
 using LuaAdv.Compiler.Nodes.Math;
 using LuaAdv.Compiler.Nodes.Statements;
@@ -210,15 +211,188 @@ namespace LuaAdv.Compiler.SemanticAnalyzer {
 
         public override Node Visit(TableOptionalChainingDotIndex node)
         {
-            node.table = (Expression)node.table.Accept(this);
+            // node.table = (Expression)node.table.Accept(this);
+            //
+            // var cond = node.table;
+            // var then = new TableDotIndex(node.table, node.Token, node.index);
+            // var @else = new Null(node.Token);
+            // var ternary = new Ternary(cond, then, @else);
+            // var newNode = new GroupedEquation(node.Token, ternary);
+            //
+            // return newNode;
 
-            var cond = node.table;
-            var then = new TableDotIndex(node.table, node.Token, node.index);
+            var unrolled = UnrollTableIndex(node);
+
+            Expression actualObject = null;
+            Expression condition = null;
+            foreach (var exp in unrolled)
+            {
+                if(actualObject == null)
+                {
+                    actualObject = exp;
+                    continue;
+                }
+                
+                if(exp is TableOptionalChainingDotIndex opt)
+                {
+                    if (condition == null)
+                    {
+                        condition = actualObject;
+                    }
+                    else
+                    {
+                        condition = new ConditionalAnd(condition, node.Token, actualObject);
+                    }
+                    
+                    actualObject = new TableDotIndex(actualObject, opt.Token, opt.index);
+                }
+                else if(exp is TableDotIndex dot)
+                {
+                    actualObject = new TableDotIndex(actualObject, dot.Token, dot.index);
+                }
+                else if(exp is TableIndex idx)
+                {
+                    actualObject = new TableIndex(actualObject, idx.key);
+                }
+            }
+
+            // TableDotIndex actualObject2 = new TableDotIndex(null, node.Token, node.index);
+            // Expression condition2 = null;
+            //
+            // var current = node.table;
+            // Expression currentActualObject = actualObject2;
+            // while (current != null)
+            // {
+            //     Expression currentCondExpr;
+            //     var includeInCondition = false;
+            //     if(current is TableOptionalChainingDotIndex opt)
+            //     {
+            //         current = opt.table;
+            //         currentCondExpr = new TableDotIndex(opt.table, opt.Token, opt.index);
+            //         includeInCondition = true;
+            //     }
+            //     else if(current is TableDotIndex dot)
+            //     {
+            //         current = dot.table;
+            //         currentCondExpr = new TableDotIndex(dot.table, dot.Token, dot.index);
+            //     }
+            //     else if (current is TableIndex idx)
+            //     {
+            //         current = idx.table;
+            //         currentCondExpr = new TableIndex(idx.table, idx.key);
+            //     }
+            //     else
+            //     {
+            //         currentCondExpr = current;
+            //         current = null;
+            //     }
+            //     
+            //     switch (currentActualObject)
+            //     {
+            //         case TableDotIndex dot_:
+            //             dot_.table = currentCondExpr;
+            //             break;
+            //         case TableIndex idx:
+            //             idx.table = currentCondExpr;
+            //             break;
+            //     }
+            //     currentActualObject = currentCondExpr;
+            //     
+            //     if (condition2 is null)
+            //     {
+            //         condition2 = currentCondExpr;
+            //     }
+            //     else if(includeInCondition)
+            //     {
+            //         condition2 = new ConditionalAnd(currentCondExpr, node.Token, condition2);
+            //     }
+            // }
+            
+            var cond = condition;
+            var then = actualObject;
             var @else = new Null(node.Token);
             var ternary = new Ternary(cond, then, @else);
             var newNode = new GroupedEquation(node.Token, ternary);
 
             return newNode;
+            
+
+            // Expression cond;
+            //
+            // var dropped = DropOptionalChaining(node.table);
+            //
+            // // if (node.table is TableOptionalChainingDotIndex prev)
+            // // {
+            //     if (dropped is TableDotIndex dot2)
+            //     {
+            //         cond = new ConditionalAnd(dot2.table, node.Token, dropped);
+            //     }
+            //     // cond = new ConditionalAnd(dropped, node.Token, );
+            // // }
+            // else
+            // {
+            //     cond = (Expression)node.table.Accept(this);
+            // }
+            //
+            // var then = new TableDotIndex(dropped, node.Token, node.index);
+            // var @else = new Null(node.Token);
+            // var ternary = new Ternary(cond, then, @else);
+            // var newNode = new GroupedEquation(node.Token, ternary);
+            //
+            // return newNode;
+        }
+
+        protected Stack<Expression> UnrollTableIndex(Expression node)
+        {
+            var stack = new Stack<Expression>();
+
+            void Walk(Expression exp)
+            {
+                if (exp is TableOptionalChainingDotIndex opt)
+                {
+                    // stack.Push(new TableDotIndex(opt.table, opt.Token, opt.index));
+                    stack.Push(exp);
+                    Walk(opt.table);
+                }
+                else if (exp is TableDotIndex dot)
+                {
+                    stack.Push(exp);
+                    Walk(dot.table);
+                }
+                else if(exp is TableIndex idx)
+                {
+                    stack.Push(exp);
+                    Walk(idx.table);
+                }
+                else
+                {
+                    stack.Push(exp);
+                }
+            }
+            
+            Walk(node);
+
+            return stack;
+        }
+
+        protected Expression DropOptionalChaining(Expression node)
+        {
+            if (node is TableOptionalChainingDotIndex opt)
+            {
+                var tbl = DropOptionalChaining(opt.table);
+                return new TableDotIndex(tbl, opt.Token, opt.index);   
+            }
+            else if (node is TableDotIndex dot)
+            {
+                var tbl = DropOptionalChaining(dot.table);
+                return new TableDotIndex(tbl, dot.Token, dot.index);
+            }
+            else if (node is TableIndex idx)
+            {
+                var tbl = DropOptionalChaining(idx.table);
+                return new TableIndex(tbl, idx.key);
+            }
+            return node;
         }
 
         public override Node Visit(SingleEnum node)
